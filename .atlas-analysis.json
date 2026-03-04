@@ -1,0 +1,133 @@
+{
+  "projectType": "saas",
+  "projectName": "Aiven",
+  "projectDescription": "AI-ready open source data platform with managed streaming and database services",
+  "theme": "palm",
+  "primaryColor": "#fb513b",
+  "lightColor": "#fbb889",
+  "darkColor": "#fc6f0b",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "marketplace-setup"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "platform/overview",
+              "platform/organizations-and-projects",
+              "platform/billing-and-payment",
+              "platform/users-and-permissions",
+              "platform/authentication",
+              "platform/vpc-and-networking",
+              "platform/security",
+              "platform/monitoring-and-logs",
+              "platform/service-integrations"
+            ]
+          },
+          {
+            "group": "Services",
+            "pages": [
+              "services/overview",
+              "services/kafka",
+              "services/postgresql",
+              "services/mysql",
+              "services/opensearch",
+              "services/clickhouse",
+              "services/flink",
+              "services/valkey",
+              "services/dragonfly",
+              "services/grafana",
+              "services/metrics"
+            ]
+          },
+          {
+            "group": "Developer Tools",
+            "pages": [
+              "tools/overview",
+              "tools/console",
+              "tools/api",
+              "tools/cli",
+              "tools/terraform",
+              "tools/kubernetes",
+              "tools/query-optimizer",
+              "tools/mcp-server"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/cloudwatch",
+              "integrations/datadog",
+              "integrations/prometheus",
+              "integrations/rsyslog",
+              "integrations/elasticsearch"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/authentication",
+              "api-reference/errors"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api-reference/projects",
+              "api-reference/services",
+              "api-reference/users",
+              "api-reference/billing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Managed Apache Kafka, PostgreSQL, MySQL, ClickHouse, OpenSearch, and Flink services",
+    "Multi-cloud deployment (AWS, Azure, Google Cloud)",
+    "Bring Your Own Cloud (BYOC) support",
+    "VPC peering and private networking",
+    "Organization and project management with role-based access control",
+    "SAML and OAuth authentication with managed users",
+    "Service integrations for monitoring and logging",
+    "Developer tools: API, CLI, Terraform Provider, Kubernetes Operator",
+    "Automatic backups and disaster recovery",
+    "Billing groups and marketplace support",
+    "Tiered storage for Kafka",
+    "Schema Registry and Kafka Connect",
+    "PostgreSQL extensions including pgvector and TimescaleDB"
+  ],
+  "publicApiSurface": [
+    "Aiven Console - Web interface for managing services",
+    "Aiven API - RESTful API for programmatic access",
+    "Aiven CLI - Command-line interface (avn)",
+    "Aiven Terraform Provider - Infrastructure as code",
+    "Aiven Kubernetes Operator - Native Kubernetes integration",
+    "Service endpoints: Kafka, PostgreSQL, MySQL, OpenSearch, ClickHouse, Flink, Valkey, Dragonfly, Grafana",
+    "Kafka REST API",
+    "Kafka Schema Registry",
+    "Kafka Connect",
+    "Organization and project management APIs",
+    "User and group management APIs",
+    "Billing and payment APIs",
+    "VPC and networking APIs",
+    "Service integration APIs"
+  ]
+}
