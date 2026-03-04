@@ -1,0 +1,605 @@
+---
+title: Service Management
+description: Create and manage Aiven services via the REST API
+---
+
+Services are the core resources in Aiven, including databases like PostgreSQL and MySQL, streaming platforms like Apache Kafka, and other data infrastructure services.
+
+## List services
+
+Retrieve all services in a project.
+
+```http
+GET /v1/project/{project}/service
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project}/service",
+    headers=headers
+)
+
+services = response.json()["services"]
+for service in services:
+    print(f"{service['service_name']}: {service['service_type']} - {service['state']}")
+```
+
+```javascript JavaScript
+const project = 'my-project';
+const response = await fetch(
+  `https://api.aiven.io/v1/project/${project}/service`,
+  {
+    headers: {
+      'Authorization': 'aivenv1 YOUR_TOKEN'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data.services);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="services" type="array">
+  List of service objects
+  
+  <Expandable>
+    <ResponseField name="service_name" type="string">
+      Name of the service
+    </ResponseField>
+    
+    <ResponseField name="service_type" type="string">
+      Type of service (e.g., `pg`, `kafka`, `mysql`, `opensearch`)
+    </ResponseField>
+    
+    <ResponseField name="state" type="string">
+      Current state: `RUNNING`, `REBUILDING`, `REBALANCING`, `POWEROFF`
+    </ResponseField>
+    
+    <ResponseField name="cloud_name" type="string">
+      Cloud region where the service is deployed
+    </ResponseField>
+    
+    <ResponseField name="plan" type="string">
+      Service plan (e.g., `business-4`, `startup-8`)
+    </ResponseField>
+    
+    <ResponseField name="service_uri" type="string">
+      Connection URI for the service
+    </ResponseField>
+    
+    <ResponseField name="service_uri_params" type="object">
+      Connection parameters (host, port, user, password, etc.)
+    </ResponseField>
+    
+    <ResponseField name="create_time" type="string">
+      ISO 8601 timestamp of service creation
+    </ResponseField>
+    
+    <ResponseField name="update_time" type="string">
+      ISO 8601 timestamp of last update
+    </ResponseField>
+    
+    <ResponseField name="node_count" type="integer">
+      Number of nodes in the service
+    </ResponseField>
+    
+    <ResponseField name="disk_space_mb" type="integer">
+      Disk space in megabytes
+    </ResponseField>
+    
+    <ResponseField name="termination_protection" type="boolean">
+      Whether termination protection is enabled
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "services": [
+    {
+      "service_name": "pg-demo",
+      "service_type": "pg",
+      "state": "RUNNING",
+      "cloud_name": "google-europe-west3",
+      "plan": "business-4",
+      "create_time": "2024-01-15T10:30:00Z",
+      "update_time": "2024-03-01T14:20:00Z",
+      "node_count": 3,
+      "disk_space_mb": 81920,
+      "termination_protection": false,
+      "service_uri": "postgres://avnadmin:password@pg-demo-project.aivencloud.com:12345/defaultdb?sslmode=require"
+    }
+  ]
+}
+```
+
+## Get service details
+
+Retrieve detailed information about a specific service.
+
+```http
+GET /v1/project/{project}/service/{service_name}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service/pg-demo" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}",
+    headers=headers
+)
+
+service_data = response.json()["service"]
+print(f"Service: {service_data['service_name']}")
+print(f"State: {service_data['state']}")
+print(f"URI: {service_data['service_uri']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="service" type="object">
+  Detailed service information (same structure as list services)
+</ResponseField>
+
+## Create service
+
+Create a new Aiven service.
+
+```http
+POST /v1/project/{project}/service
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+### Request body
+
+<ParamField body="service_name" type="string" required>
+  Name for the new service (3-63 characters)
+</ParamField>
+
+<ParamField body="service_type" type="string" required>
+  Service type: `pg`, `mysql`, `kafka`, `opensearch`, `caching`, `clickhouse`, `grafana`, etc.
+</ParamField>
+
+<ParamField body="plan" type="string" required>
+  Service plan (e.g., `hobbyist`, `startup-4`, `business-4`)
+</ParamField>
+
+<ParamField body="cloud" type="string" required>
+  Cloud region (e.g., `google-europe-west3`, `aws-us-east-1`)
+</ParamField>
+
+<ParamField body="disk_space_mb" type="integer">
+  Total disk space in megabytes (overrides plan default)
+</ParamField>
+
+<ParamField body="project_vpc_id" type="string">
+  VPC ID to deploy the service in
+</ParamField>
+
+<ParamField body="termination_protection" type="boolean">
+  Enable termination protection (default: false)
+</ParamField>
+
+<ParamField body="user_config" type="object">
+  Service-specific configuration options
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL - PostgreSQL
+curl -X POST "https://api.aiven.io/v1/project/my-project/service" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service_name": "pg-prod",
+    "service_type": "pg",
+    "plan": "business-4",
+    "cloud": "google-europe-west3",
+    "termination_protection": true
+  }'
+```
+
+```bash cURL - Kafka
+curl -X POST "https://api.aiven.io/v1/project/my-project/service" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service_name": "kafka-prod",
+    "service_type": "kafka",
+    "plan": "business-4",
+    "cloud": "aws-eu-west-1",
+    "user_config": {
+      "kafka_connect": true,
+      "kafka_rest": true
+    }
+  }'
+```
+
+```python Python
+import requests
+
+project = "my-project"
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "service_name": "pg-prod",
+    "service_type": "pg",
+    "plan": "business-4",
+    "cloud": "google-europe-west3",
+    "termination_protection": True,
+    "user_config": {
+        "pg_version": "16"
+    }
+}
+
+response = requests.post(
+    f"https://api.aiven.io/v1/project/{project}/service",
+    headers=headers,
+    json=data
+)
+
+service = response.json()["service"]
+print(f"Creating service: {service['service_name']}")
+print(f"State: {service['state']}")
+```
+
+```javascript JavaScript
+const project = 'my-project';
+const response = await fetch(
+  `https://api.aiven.io/v1/project/${project}/service`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'aivenv1 YOUR_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      service_name: 'pg-prod',
+      service_type: 'pg',
+      plan: 'business-4',
+      cloud: 'google-europe-west3',
+      termination_protection: true
+    })
+  }
+);
+
+const data = await response.json();
+console.log('Created service:', data.service.service_name);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="service" type="object">
+  The newly created service object with state `REBUILDING`
+</ResponseField>
+
+<Info>
+Services start in the `REBUILDING` state and transition to `RUNNING` when ready. This typically takes 5-15 minutes depending on the service type and plan.
+</Info>
+
+## Update service
+
+Update service configuration, plan, or cloud region.
+
+```http
+PUT /v1/project/{project}/service/{service_name}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+### Request body
+
+<ParamField body="plan" type="string">
+  Change service plan
+</ParamField>
+
+<ParamField body="cloud" type="string">
+  Migrate service to different cloud region
+</ParamField>
+
+<ParamField body="disk_space_mb" type="integer">
+  Increase disk space (cannot be decreased)
+</ParamField>
+
+<ParamField body="powered" type="boolean">
+  Power service on (true) or off (false)
+</ParamField>
+
+<ParamField body="termination_protection" type="boolean">
+  Enable or disable termination protection
+</ParamField>
+
+<ParamField body="maintenance" type="object">
+  Maintenance window configuration (dow, time)
+</ParamField>
+
+<ParamField body="user_config" type="object">
+  Update service-specific configuration
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL - Scale up
+curl -X PUT "https://api.aiven.io/v1/project/my-project/service/pg-demo" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plan": "business-8"
+  }'
+```
+
+```bash cURL - Power off
+curl -X PUT "https://api.aiven.io/v1/project/my-project/service/pg-demo" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "powered": false
+  }'
+```
+
+```python Python - Update config
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "user_config": {
+        "ip_filter": ["10.0.0.0/8", "192.168.1.0/24"]
+    }
+}
+
+response = requests.put(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}",
+    headers=headers,
+    json=data
+)
+
+print(f"Updated service: {response.json()['service']['service_name']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="service" type="object">
+  The updated service object
+</ResponseField>
+
+## Delete service
+
+Permanently delete a service and all its data.
+
+```http
+DELETE /v1/project/{project}/service/{service_name}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+<Warning>
+This operation is irreversible. All service data will be permanently deleted. Services with termination protection enabled cannot be deleted until protection is disabled.
+</Warning>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.aiven.io/v1/project/my-project/service/pg-demo" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.delete(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}",
+    headers=headers
+)
+
+if response.status_code == 200:
+    print(f"Service {service} deleted successfully")
+```
+</CodeGroup>
+
+### Response
+
+Returns 200 OK with an empty response body on success.
+
+## List service types
+
+Get available service types and their descriptions.
+
+```http
+GET /v1/service_types
+```
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/service_types" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+response = requests.get(
+    "https://api.aiven.io/v1/service_types",
+    headers=headers
+)
+
+for service_type in response.json()["service_types"]:
+    print(f"{service_type['service_type']}: {service_type['description']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="service_types" type="array">
+  List of available service types
+  
+  <Expandable>
+    <ResponseField name="service_type" type="string">
+      Service type identifier
+    </ResponseField>
+    
+    <ResponseField name="description" type="string">
+      Human-readable description
+    </ResponseField>
+    
+    <ResponseField name="latest_available_version" type="string">
+      Latest version available
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "service_types": [
+    {
+      "service_type": "pg",
+      "description": "PostgreSQL - Object-Relational Database Management System",
+      "latest_available_version": "16"
+    },
+    {
+      "service_type": "kafka",
+      "description": "Kafka - High-Throughput Distributed Messaging System",
+      "latest_available_version": "3.7"
+    },
+    {
+      "service_type": "opensearch",
+      "description": "OpenSearch - Search & Analyze Data in Real Time",
+      "latest_available_version": "2.11"
+    }
+  ]
+}
+```
+
+## List service plans
+
+Get available plans for a service type in a specific cloud region.
+
+```http
+GET /v1/project/{project}/service_types/{service_type}/plans
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_type" type="string" required>
+  Service type (e.g., `pg`, `kafka`)
+</ParamField>
+
+<ParamField query="cloud" type="string">
+  Filter by cloud region
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service_types/pg/plans?cloud=google-europe-west3" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service_type = "pg"
+cloud = "google-europe-west3"
+
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project}/service_types/{service_type}/plans",
+    headers=headers,
+    params={"cloud": cloud}
+)
+
+for plan in response.json()["plans"]:
+    print(f"{plan['plan_name']}: ${plan['price_usd']}/hour")
+```
+</CodeGroup>
+
+## Related resources
+
+- [Create a service in Console](/docs/platform/howto/create_new_service)
+- [Service CLI commands](/docs/tools/cli/service-cli)
+- [Projects API](/api-reference/projects)
+- [Full API reference](https://api.aiven.io/doc/)

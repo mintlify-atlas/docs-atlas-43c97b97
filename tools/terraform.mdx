@@ -1,0 +1,564 @@
+---
+title: Aiven Terraform Provider
+description: Automate infrastructure provisioning and management on the Aiven platform using Terraform.
+---
+
+The [Aiven Provider for Terraform](https://registry.terraform.io/providers/aiven/aiven/latest/docs) enables you to define, provision, and manage your Aiven infrastructure using infrastructure-as-code principles.
+
+## Why use Terraform
+
+<CardGroup cols={2}>
+  <Card title="Infrastructure as Code" icon="code">
+    Define your infrastructure in version-controlled configuration files
+  </Card>
+  
+  <Card title="Reproducible environments" icon="copy">
+    Create identical environments across dev, staging, and production
+  </Card>
+  
+  <Card title="Plan before apply" icon="eye">
+    Preview changes before applying them to your infrastructure
+  </Card>
+  
+  <Card title="State management" icon="database">
+    Track resource state and dependencies automatically
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+- [Aiven account](https://console.aiven.io/signup)
+- [Terraform](https://www.terraform.io/downloads) installed (version 1.0 or later)
+- [Authentication token](/tools/console) from Aiven Console
+
+## Quick start
+
+<Steps>
+  <Step title="Create a token">
+    Generate an authentication token from the [Aiven Console](https://console.aiven.io) under **User Profile** > **Tokens**
+  </Step>
+  
+  <Step title="Configure the provider">
+    Create a `main.tf` file with the provider configuration:
+    
+    ```hcl main.tf
+    terraform {
+      required_providers {
+        aiven = {
+          source  = "aiven/aiven"
+          version = "~> 4.0"
+        }
+      }
+    }
+    
+    provider "aiven" {
+      api_token = var.aiven_api_token
+    }
+    ```
+  </Step>
+  
+  <Step title="Create variables file">
+    Create a `variables.tf` file:
+    
+    ```hcl variables.tf
+    variable "aiven_api_token" {
+      description = "Aiven API token"
+      type        = string
+      sensitive   = true
+    }
+    ```
+  </Step>
+  
+  <Step title="Set your token">
+    Create a `terraform.tfvars` file (don't commit this!):
+    
+    ```hcl terraform.tfvars
+    aiven_api_token = "YOUR_TOKEN_HERE"
+    ```
+    
+    Or set it as an environment variable:
+    
+    ```bash
+    export TF_VAR_aiven_api_token="YOUR_TOKEN_HERE"
+    ```
+  </Step>
+  
+  <Step title="Initialize Terraform">
+    ```bash
+    terraform init
+    ```
+  </Step>
+</Steps>
+
+## Basic examples
+
+### Create a PostgreSQL service
+
+```hcl
+resource "aiven_pg" "postgres" {
+  project                 = "my-project"
+  service_name            = "my-postgres"
+  cloud_name              = "google-europe-north1"
+  plan                    = "startup-4"
+  maintenance_window_dow  = "sunday"
+  maintenance_window_time = "10:00:00"
+
+  pg_user_config {
+    pg_version = "16"
+    
+    public_access {
+      pg = true
+    }
+  }
+}
+
+# Output the connection URI
+output "postgres_uri" {
+  value     = aiven_pg.postgres.service_uri
+  sensitive = true
+}
+```
+
+### Create an Apache Kafka service
+
+```hcl
+resource "aiven_kafka" "kafka" {
+  project      = "my-project"
+  service_name = "my-kafka"
+  cloud_name   = "google-europe-north1"
+  plan         = "business-4"
+
+  kafka_user_config {
+    kafka_version = "3.6"
+    
+    kafka {
+      auto_create_topics_enable = true
+    }
+    
+    kafka_connect = true
+  }
+}
+
+# Create a Kafka topic
+resource "aiven_kafka_topic" "orders" {
+  project      = aiven_kafka.kafka.project
+  service_name = aiven_kafka.kafka.service_name
+  topic_name   = "orders"
+  partitions   = 3
+  replication  = 2
+  
+  config {
+    retention_ms = 604800000 # 7 days
+  }
+}
+
+# Create a Kafka user
+resource "aiven_kafka_user" "app_user" {
+  project      = aiven_kafka.kafka.project
+  service_name = aiven_kafka.kafka.service_name
+  username     = "app-user"
+}
+
+# Create ACL for the user
+resource "aiven_kafka_acl" "app_user_read" {
+  project      = aiven_kafka.kafka.project
+  service_name = aiven_kafka.kafka.service_name
+  username     = aiven_kafka_user.app_user.username
+  permission   = "read"
+  topic        = aiven_kafka_topic.orders.topic_name
+}
+```
+
+### Create a database and user in PostgreSQL
+
+```hcl
+resource "aiven_pg_database" "app_db" {
+  project       = aiven_pg.postgres.project
+  service_name  = aiven_pg.postgres.service_name
+  database_name = "appdb"
+}
+
+resource "aiven_pg_user" "app_user" {
+  project      = aiven_pg.postgres.project
+  service_name = aiven_pg.postgres.service_name
+  username     = "app_user"
+}
+```
+
+## Organization setup example
+
+Create an organization with organizational units and projects:
+
+```hcl
+# Create organization
+resource "aiven_organization" "main" {
+  name = "my-company"
+}
+
+# Create organizational units
+resource "aiven_organizational_unit" "engineering" {
+  name          = "Engineering"
+  parent_id     = aiven_organization.main.id
+}
+
+resource "aiven_organizational_unit" "production" {
+  name          = "Production"
+  parent_id     = aiven_organizational_unit.engineering.id
+}
+
+resource "aiven_organizational_unit" "development" {
+  name          = "Development"
+  parent_id     = aiven_organizational_unit.engineering.id
+}
+
+# Create projects
+resource "aiven_project" "prod" {
+  project       = "production-services"
+  parent_id     = aiven_organizational_unit.production.id
+}
+
+resource "aiven_project" "dev" {
+  project       = "development-services"
+  parent_id     = aiven_organizational_unit.development.id
+}
+```
+
+## Advanced features
+
+### Service integrations
+
+Integrate services together:
+
+```hcl
+# PostgreSQL service
+resource "aiven_pg" "postgres" {
+  project      = "my-project"
+  service_name = "my-postgres"
+  cloud_name   = "google-europe-north1"
+  plan         = "startup-4"
+}
+
+# InfluxDB service for metrics
+resource "aiven_influxdb" "metrics" {
+  project      = "my-project"
+  service_name = "metrics-db"
+  cloud_name   = "google-europe-north1"
+  plan         = "startup-4"
+}
+
+# Integrate PostgreSQL metrics to InfluxDB
+resource "aiven_service_integration" "pg_to_influx" {
+  project                  = "my-project"
+  integration_type         = "metrics"
+  source_service_name      = aiven_pg.postgres.service_name
+  destination_service_name = aiven_influxdb.metrics.service_name
+}
+```
+
+### VPC and peering
+
+```hcl
+# Create a VPC
+resource "aiven_project_vpc" "vpc" {
+  project      = "my-project"
+  cloud_name   = "google-europe-north1"
+  network_cidr = "10.0.0.0/24"
+}
+
+# Create service in VPC
+resource "aiven_pg" "postgres" {
+  project      = "my-project"
+  service_name = "my-postgres"
+  cloud_name   = "google-europe-north1"
+  plan         = "startup-4"
+  
+  project_vpc_id = aiven_project_vpc.vpc.id
+}
+
+# Create VPC peering connection (AWS example)
+resource "aiven_aws_vpc_peering_connection" "peering" {
+  vpc_id              = aiven_project_vpc.vpc.id
+  aws_account_id      = "123456789012"
+  aws_vpc_id          = "vpc-1234567890abcdef0"
+  aws_vpc_region      = "us-east-1"
+}
+```
+
+### Static IP addresses
+
+```hcl
+resource "aiven_static_ip" "ip" {
+  project    = "my-project"
+  cloud_name = "google-europe-north1"
+}
+
+resource "aiven_pg" "postgres" {
+  project      = "my-project"
+  service_name = "my-postgres"
+  cloud_name   = "google-europe-north1"
+  plan         = "startup-4"
+  
+  static_ips = [aiven_static_ip.ip.static_ip_address_id]
+}
+```
+
+### Connection pooling (PostgreSQL)
+
+```hcl
+resource "aiven_connection_pool" "pool" {
+  project       = aiven_pg.postgres.project
+  service_name  = aiven_pg.postgres.service_name
+  database_name = aiven_pg_database.app_db.database_name
+  pool_name     = "app_pool"
+  pool_size     = 25
+  pool_mode     = "transaction"
+  username      = aiven_pg_user.app_user.username
+}
+
+output "pool_uri" {
+  value     = aiven_connection_pool.pool.connection_uri
+  sensitive = true
+}
+```
+
+## Workflow commands
+
+### Initialize
+
+Download provider and initialize working directory:
+
+```bash
+terraform init
+```
+
+### Plan
+
+Preview changes before applying:
+
+```bash
+terraform plan
+```
+
+Save plan to a file:
+
+```bash
+terraform plan -out=tfplan
+```
+
+### Apply
+
+Apply changes to create/update infrastructure:
+
+```bash
+terraform apply
+```
+
+Apply without confirmation:
+
+```bash
+terraform apply -auto-approve
+```
+
+Apply a saved plan:
+
+```bash
+terraform apply tfplan
+```
+
+### Destroy
+
+Destroy all managed infrastructure:
+
+<Warning>
+This will permanently delete all resources defined in your Terraform configuration.
+</Warning>
+
+```bash
+terraform destroy
+```
+
+### Import
+
+Import existing Aiven resources:
+
+```bash
+terraform import aiven_pg.postgres my-project/my-postgres
+```
+
+### State management
+
+```bash
+# List resources in state
+terraform state list
+
+# Show resource details
+terraform state show aiven_pg.postgres
+
+# Remove resource from state (doesn't delete actual resource)
+terraform state rm aiven_pg.postgres
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Use remote state">
+    Store Terraform state remotely for team collaboration:
+    
+    ```hcl
+    terraform {
+      backend "s3" {
+        bucket = "my-terraform-state"
+        key    = "aiven/terraform.tfstate"
+        region = "us-east-1"
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use modules">
+    Create reusable modules for common patterns:
+    
+    ```hcl
+    module "postgres" {
+      source = "./modules/postgres"
+      
+      project    = "my-project"
+      name       = "my-postgres"
+      cloud      = "google-europe-north1"
+      plan       = "startup-4"
+      pg_version = "16"
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use workspaces">
+    Manage multiple environments:
+    
+    ```bash
+    terraform workspace new production
+    terraform workspace new staging
+    terraform workspace select production
+    ```
+    
+    Reference in configuration:
+    ```hcl
+    resource "aiven_pg" "postgres" {
+      service_name = "postgres-${terraform.workspace}"
+      # ...
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Protect sensitive resources">
+    Prevent accidental deletion:
+    
+    ```hcl
+    resource "aiven_pg" "postgres" {
+      # ...
+      
+      lifecycle {
+        prevent_destroy = true
+      }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use data sources">
+    Reference existing resources:
+    
+    ```hcl
+    data "aiven_project" "existing" {
+      project = "my-project"
+    }
+    
+    resource "aiven_pg" "postgres" {
+      project = data.aiven_project.existing.project
+      # ...
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Available resources
+
+The Aiven Terraform Provider supports a wide range of resources:
+
+### Services
+- PostgreSQL: `aiven_pg`
+- MySQL: `aiven_mysql`
+- Apache Kafka: `aiven_kafka`
+- Apache Kafka Connect: `aiven_kafka_connect`
+- Apache Flink: `aiven_flink`
+- OpenSearch: `aiven_opensearch`
+- Redis: `aiven_redis`
+- InfluxDB: `aiven_influxdb`
+- Grafana: `aiven_grafana`
+- And more...
+
+### Service components
+- Databases: `aiven_pg_database`, `aiven_mysql_database`
+- Users: `aiven_pg_user`, `aiven_kafka_user`
+- Topics: `aiven_kafka_topic`
+- ACLs: `aiven_kafka_acl`
+- Connectors: `aiven_kafka_connector`
+- Connection pools: `aiven_connection_pool`
+
+### Platform resources
+- Projects: `aiven_project`
+- Organizations: `aiven_organization`
+- Organizational units: `aiven_organizational_unit`
+- VPCs: `aiven_project_vpc`
+- VPC peering: `aiven_aws_vpc_peering_connection`
+- Static IPs: `aiven_static_ip`
+
+## Troubleshooting
+
+### Enable debug logging
+
+```bash
+export TF_LOG=DEBUG
+terraform apply
+```
+
+### Check provider version
+
+```bash
+terraform version
+```
+
+### Refresh state
+
+```bash
+terraform refresh
+```
+
+## Migration from other tools
+
+Migrate existing Aiven resources to Terraform:
+
+<Steps>
+  <Step title="Create resource blocks">
+    Write Terraform configuration for existing resources
+  </Step>
+  
+  <Step title="Import resources">
+    ```bash
+    terraform import aiven_pg.postgres my-project/my-postgres
+    ```
+  </Step>
+  
+  <Step title="Verify state">
+    ```bash
+    terraform plan
+    ```
+    
+    Should show no changes needed
+  </Step>
+</Steps>
+
+## Related resources
+
+- [Terraform Provider Documentation](https://registry.terraform.io/providers/aiven/aiven/latest/docs)
+- [Provider Examples on GitHub](https://github.com/aiven/terraform-provider-aiven/tree/main/examples)
+- [Aiven API Documentation](/tools/api)
+- [Terraform Documentation](https://www.terraform.io/docs)

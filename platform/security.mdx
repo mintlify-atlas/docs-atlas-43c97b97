@@ -1,0 +1,751 @@
+---
+title: Security
+description: Learn about Aiven's security architecture, including encryption, network security, access control, compliance, and data protection.
+---
+
+Aiven provides enterprise-grade security across all layers of the platform. From encryption at rest and in transit to network isolation and compliance certifications, security is built into every aspect of Aiven services.
+
+## Security overview
+
+Aiven's security architecture follows defense-in-depth principles:
+
+<CardGroup cols={2}>
+  <Card title="Data Encryption" icon="lock">
+    - At rest: LUKS full-disk encryption
+    - In transit: TLS 1.2+ for all connections
+    - Backups: AES-256 + RSA encryption
+    - Key rotation: Automatic with upgrades
+  </Card>
+  
+  <Card title="Network Security" icon="network-wired">
+    - TLS-only connections, no plaintext
+    - VPC peering for private connectivity
+    - IP allowlisting
+    - Dynamic firewall protection
+  </Card>
+  
+  <Card title="Access Control" icon="user-shield">
+    - Role-based access control (RBAC)
+    - SSO and SAML support
+    - Two-factor authentication
+    - Application users for automation
+  </Card>
+  
+  <Card title="Compliance" icon="certificate">
+    - SOC 2 Type II
+    - ISO 27001
+    - HIPAA
+    - PCI DSS
+    - GDPR compliant
+  </Card>
+</CardGroup>
+
+## Data encryption
+
+Aiven encrypts data at every stage - at rest, in transit, and in backups.
+
+### Encryption at rest
+
+All service instances use full-disk encryption:
+
+<Steps>
+  <Step title="LUKS encryption">
+    - **Algorithm:** AES-XTS-Plain64 with SHA256
+    - **Key size:** 512-bit encryption key
+    - **Mode:** LUKS2 default configuration
+  </Step>
+  
+  <Step title="Ephemeral keys">
+    - Randomly generated per instance and volume
+    - Never reused across instances
+    - Destroyed when instance terminates
+  </Step>
+  
+  <Step title="Automatic key rotation">
+    - Keys rotated during maintenance updates
+    - Rolling upgrades create new instances with new keys
+    - Old instances and keys destroyed
+  </Step>
+</Steps>
+
+```yaml
+Encryption Details:
+  Service VMs:
+    Method: LUKS2 full volume encryption
+    Algorithm: aes-xts-plain64:sha256
+    Key Size: 512-bit
+    Key Generation: Random per instance
+    Key Storage: Instance memory only
+    Key Lifetime: Instance lifetime
+```
+
+<Note>
+Encryption keys never leave the virtual machine. Aiven cannot access your data at rest without the running instance.
+</Note>
+
+### Encryption in transit
+
+All connections to and between Aiven services use TLS encryption:
+
+- **Client connections:** TLS 1.2+ required, no plaintext option
+- **Service-to-service:** TLS or IPsec for inter-VM communication
+- **Strong cipher suites:** AES-256-GCM, ChaCha20-Poly1305
+- **Perfect forward secrecy:** ECDHE key exchange
+
+```bash
+# Download CA certificate for validation
+avn project ca-get \
+  --project my-project \
+  --target-filepath ca.pem
+
+# Connect with certificate validation (PostgreSQL)
+psql "postgres://user:pass@host:port/db?sslmode=verify-full&sslrootcert=ca.pem"
+
+# Connect with certificate validation (Kafka)
+kafka-console-consumer --bootstrap-server host:port \
+  --consumer-property security.protocol=SSL \
+  --consumer-property ssl.truststore.location=ca.truststore \
+  --consumer-property ssl.truststore.password=changeit
+```
+
+### Backup encryption
+
+Service backups are encrypted with multiple layers:
+
+<Steps>
+  <Step title="File encryption">
+    - **Algorithm:** AES-256 in CTR mode
+    - **Key size:** 256-bit
+    - **Integrity:** HMAC-SHA256
+    - **Per-file keys:** Random key for each backup segment
+  </Step>
+  
+  <Step title="Key encryption">
+    - **Algorithm:** RSA
+    - **Key size:** 3072-bit RSA key pair
+    - **Key generation:** Random per service
+    - **Key storage:** Encrypted in backup header
+  </Step>
+  
+  <Step title="Storage location">
+    - Same region as service (default)
+    - Cross-region backup available
+    - Cloud provider object storage (S3, GCS, Azure Blob)
+  </Step>
+</Steps>
+
+```yaml
+Backup Encryption:
+  File Encryption:
+    Algorithm: AES-256-CTR
+    Key Size: 256-bit
+    Integrity: HMAC-SHA256 (512-bit)
+  
+  Key Encryption:
+    Algorithm: RSA
+    Key Size: 3072-bit
+    Key Storage: Backup file header
+  
+  Storage:
+    Location: Same region as service
+    Provider: Cloud object storage
+    Access: Aiven-managed keys only
+```
+
+### Bring Your Own Key (BYOK)
+
+For enhanced control, use your own encryption keys:
+
+- **Customer-managed keys:** Use keys from your KMS
+- **AWS KMS, GCP KMS, Azure Key Vault:** Integration available
+- **Key rotation:** You control rotation schedule
+- **Access audit:** Full audit trail in your KMS
+
+<Note>
+BYOK is available with Advanced or Premium support tiers. Contact your account team to enable this feature.
+</Note>
+
+## Network security
+
+### Connection security
+
+All network connections are secured:
+
+<Tabs>
+  <Tab title="Client Connections">
+    **Public or private access with encryption**
+    
+    - **Mandatory TLS:** No plaintext connections allowed
+    - **Certificate validation:** CA certificates available
+    - **IP filtering:** Restrict access by source IP
+    - **VPC peering:** Private network connectivity
+    
+    ```bash
+    # Configure IP allowlist
+    avn service update \
+      --project my-project \
+      --service postgres-1 \
+      -c ip_filter="203.0.113.0/24"
+    ```
+  </Tab>
+  
+  <Tab title="Service-to-Service">
+    **Internal communication security**
+    
+    - **TLS or IPsec:** Encrypted inter-VM communication
+    - **No plaintext:** All internal traffic encrypted
+    - **Isolated networks:** Cloud provider network isolation
+    - **Firewall rules:** Dynamic iptables protection
+  </Tab>
+</Tabs>
+
+### VPC and network isolation
+
+Enhanced security with private networking:
+
+<CardGroup cols={2}>
+  <Card title="VPC Peering" icon="network-wired">
+    **Private network connectivity**
+    
+    - No public internet exposure
+    - Private IP addressing
+    - Direct cloud provider network connection
+    - Supported: AWS, GCP, Azure, UpCloud
+  </Card>
+  
+  <Card title="Dedicated VMs" icon="server">
+    **No multi-tenancy**
+    
+    - One customer per VM
+    - Data never leaves VM (except backups)
+    - VMs destroyed after use
+    - Fresh VMs for upgrades
+  </Card>
+</CardGroup>
+
+### Firewall protection
+
+Dynamic firewall rules protect each service:
+
+```yaml
+Firewall Configuration:
+  Type: iptables-based
+  Default Policy: DENY all
+  Allowed Sources:
+    - IP allowlist entries
+    - Peered VPC CIDR blocks
+    - Aiven management plane
+  Allowed Ports:
+    - Service-specific (5432, 6379, 9092, etc.)
+    - Management access (restricted IPs)
+  Updates: Dynamic based on configuration
+```
+
+## Virtual machines and infrastructure
+
+### Cloud provider accounts
+
+Aiven services run in Aiven-managed cloud accounts:
+
+- **Aiven-controlled:** Cloud accounts managed by Aiven operations
+- **Customer isolation:** Customers cannot access Aiven cloud accounts
+- **Multi-cloud:** Services across AWS, GCP, Azure, DigitalOcean, UpCloud
+- **Region selection:** Customer chooses deployment regions
+
+### Virtual machine security
+
+<Steps>
+  <Step title="Dedicated VMs">
+    - One customer per virtual machine
+    - No multi-tenancy at VM level
+    - Data isolation guaranteed
+  </Step>
+  
+  <Step title="Availability zones">
+    - VMs distributed across AZs
+    - High availability and fault tolerance
+    - Region-dependent (2-3+ AZs)
+  </Step>
+  
+  <Step title="VM lifecycle">
+    - VMs never reused
+    - Destroyed during upgrades
+    - Full disk wipe on termination
+    - New VMs for each deployment
+  </Step>
+</Steps>
+
+### Operator access
+
+<Warning>
+Aiven operations team can access VMs for troubleshooting, but all access is logged and audited.
+</Warning>
+
+- **Automatic operations:** No manual intervention normally required
+- **Troubleshooting access:** Operations team can securely log in
+- **Audit logging:** All operator access logged
+- **Customer data privacy:** Operators never access customer data unless requested
+- **No customer access:** Customers cannot access VM level
+
+```yaml
+Operator Access Policy:
+  Normal Operations: Fully automated, no manual access
+  Troubleshooting: Secure SSH access when needed
+  Audit: All access logged and tracked
+  Customer Data: Never accessed without explicit request
+  Customer Access: Not provided at VM level
+```
+
+## Access control
+
+### Authentication
+
+Multiple authentication methods with centralized control:
+
+- **Passwords + 2FA:** Email/password with optional/required two-factor
+- **Social login:** Google, Microsoft, GitHub
+- **SAML SSO:** Enterprise identity providers (Okta, Azure AD, etc.)
+- **Authentication policies:** Organization-wide control
+- **Token authentication:** Personal and application tokens
+
+<Note>
+Learn more about [authentication methods](/platform/authentication) and [users and permissions](/platform/users-and-permissions).
+</Note>
+
+### Role-based access control (RBAC)
+
+Granular control over who can do what:
+
+<Tabs>
+  <Tab title="Organization Level">
+    - Super Admin (full access)
+    - Organization Admin (full except delete org)
+    - Custom permissions (billing, users, networking)
+  </Tab>
+  
+  <Tab title="Project Level">
+    - Admin (full project access)
+    - Operator (manage services and infrastructure)
+    - Developer (read + data access)
+    - Read Only (view only)
+  </Tab>
+  
+  <Tab title="Service Level">
+    - Service users (database/service-specific)
+    - Connection credentials per service
+    - Per-service access control
+  </Tab>
+</Tabs>
+
+### Managed users
+
+Centralized user management with verified domains:
+
+```bash
+# Verify your organization's domain
+avn organization domain-add \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Add DNS TXT record, then verify
+avn organization domain-verify \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Users with @company.com become managed users
+```
+
+**Managed user benefits:**
+- Centralized lifecycle management
+- Cannot create new organizations
+- Profile managed by org admins
+- Visible to org even before joining
+
+## Compliance and certifications
+
+Aiven maintains industry-leading compliance certifications:
+
+### Certifications
+
+<CardGroup cols={2}>
+  <Card title="SOC 2 Type II" icon="file-certificate">
+    - Annual audit by independent assessor
+    - Security, availability, confidentiality
+    - Reports available to customers
+  </Card>
+  
+  <Card title="ISO 27001" icon="certificate">
+    - Information security management
+    - International standard
+    - Regularly audited and certified
+  </Card>
+  
+  <Card title="HIPAA" icon="hospital">
+    - Healthcare data protection
+    - Business Associate Agreement (BAA) available
+    - For Advanced and Premium tiers
+  </Card>
+  
+  <Card title="PCI DSS" icon="credit-card">
+    - Payment card data security
+    - Level 1 service provider
+    - For qualifying deployments
+  </Card>
+</CardGroup>
+
+### Data privacy regulations
+
+<Steps>
+  <Step title="GDPR Compliance">
+    - EU data protection regulation
+    - Data processing agreement available
+    - Data residency options
+    - Right to erasure implemented
+  </Step>
+  
+  <Step title="CCPA Compliance">
+    - California consumer privacy
+    - Data transparency and control
+    - Opt-out mechanisms
+  </Step>
+  
+  <Step title="Data residency">
+    - Deploy in any supported region
+    - Data stays in chosen region
+    - Backup storage in same region (default)
+    - Cross-region backup optional
+  </Step>
+</Steps>
+
+### Enhanced Compliance Environment
+
+For strict compliance requirements:
+
+- **Additional controls:** Enhanced security measures
+- **Dedicated infrastructure:** Isolated environment
+- **Stricter policies:** Additional restrictions
+- **Compliance support:** Dedicated assistance
+- **Available for:** HIPAA, PCI DSS, and other regulations
+
+<Note>
+Contact your account team to learn about Enhanced Compliance Environment options.
+</Note>
+
+## Audit and monitoring
+
+### Audit logs
+
+Track all actions in your organization:
+
+<Tabs>
+  <Tab title="Organization Logs">
+    View organization-level events:
+    
+    ```bash
+    # View organization audit log
+    # Admin → Organization → Events Log
+    
+    # Logged events:
+    # - User invitations and removals
+    # - Permission changes
+    # - IdP configuration changes
+    # - Billing group changes
+    # - Domain verification
+    ```
+  </Tab>
+  
+  <Tab title="Project Logs">
+    View project-level events:
+    
+    ```bash
+    # View project event log  
+    # Project → Event log
+    
+    # Logged events:
+    # - Service creation/deletion
+    # - Service configuration changes
+    # - User access changes
+    # - Integration changes
+    # - VPC modifications
+    ```
+  </Tab>
+  
+  <Tab title="Service Logs">
+    View service-specific logs:
+    
+    ```bash
+    # View service logs
+    avn service logs \
+      --project my-project \
+      --service postgres-1
+    
+    # Logs include:
+    # - Connection attempts
+    # - Query errors
+    # - Replication status
+    # - Performance issues
+    ```
+  </Tab>
+</Tabs>
+
+### Security monitoring
+
+Continuous monitoring for security events:
+
+- **Anomaly detection:** Unusual access patterns
+- **Failed login tracking:** Multiple failed authentication attempts
+- **Token leaks:** GitHub secret scanning partnership
+- **Vulnerability scanning:** Regular security assessments
+- **Penetration testing:** Independent third-party testing
+
+### Software Bill of Materials (SBOM)
+
+Transparency into software components:
+
+```bash
+# Generate SBOM for project
+avn project generate-sbom \
+  --project my-project \
+  --output csv
+
+# Output includes:
+# - OS packages in VMs
+# - Service software packages
+# - Versions and dependencies
+# - Security vulnerability info
+```
+
+<Note>
+SBOM reports are available in CSV and SPDX formats. All services in the project must have latest patches applied.
+</Note>
+
+## Data protection
+
+### Customer data privacy
+
+Aiven's commitment to data privacy:
+
+<Steps>
+  <Step title="No data access">
+    - Operators never access customer data
+    - Exception: Explicit customer request for troubleshooting
+    - All access logged and audited
+  </Step>
+  
+  <Step title="Data processing agreement">
+    - Available for GDPR compliance
+    - Defines data processing terms
+    - Customer remains data controller
+  </Step>
+  
+  <Step title="Token leak protection">
+    - Partnership with GitHub secret scanning
+    - Automatic detection of leaked tokens
+    - Email notification to customers
+    - Recommendation to rotate tokens
+  </Step>
+  
+  <Step title="Training and policies">
+    - Mandatory security training for operations team
+    - Regular policy reviews and updates
+    - Strict data privacy policies
+  </Step>
+</Steps>
+
+### Data retention and deletion
+
+<Tabs>
+  <Tab title="Service Data">
+    - Stored for service lifetime
+    - Deleted when service terminated
+    - Backups retained per backup policy
+    - VMs destroyed and wiped
+  </Tab>
+  
+  <Tab title="Backups">
+    - Retention: 2-365 days (service dependent)
+    - Encrypted at rest
+    - Deleted after retention period
+    - Can be deleted manually
+  </Tab>
+  
+  <Tab title="Logs">
+    - Service logs: 4 days retention
+    - Audit logs: 90 days (varies by type)
+    - Longer retention via log integration
+    - Exported logs under customer control
+  </Tab>
+</Tabs>
+
+```bash
+# Delete service and all data
+avn service terminate \
+  --project my-project \
+  --service postgres-1
+
+# Note: This permanently deletes:
+# - All service data
+# - Service configuration  
+# - Service users and credentials
+# - Backups are retained per policy
+```
+
+## Security best practices
+
+<Steps>
+  <Step title="Enable VPC peering">
+    Use private network connectivity for production services instead of public access
+  </Step>
+  
+  <Step title="Use IP allowlists">
+    Even with VPC peering, restrict access by IP address for defense in depth
+  </Step>
+  
+  <Step title="Verify your domain">
+    Enable managed users for centralized control and better security
+  </Step>
+  
+  <Step title="Require SAML SSO">
+    Use enterprise identity providers and disable password authentication
+  </Step>
+  
+  <Step title="Enforce 2FA">
+    Require two-factor authentication if using password login
+  </Step>
+  
+  <Step title="Use application users">
+    Never use personal accounts for automation - create dedicated application users
+  </Step>
+  
+  <Step title="Rotate tokens regularly">
+    Revoke and regenerate tokens every 90 days or less
+  </Step>
+  
+  <Step title="Principle of least privilege">
+    Grant users only the minimum permissions needed for their role
+  </Step>
+  
+  <Step title="Enable service integrations for logs">
+    Send logs to OpenSearch for longer retention and analysis
+  </Step>
+  
+  <Step title="Regular security audits">
+    Review users, permissions, IP allowlists, and configurations quarterly
+  </Step>
+  
+  <Step title="Monitor audit logs">
+    Regularly review organization and project audit logs for suspicious activity
+  </Step>
+  
+  <Step title="Use termination protection">
+    Enable for critical production services to prevent accidental deletion
+  </Step>
+</Steps>
+
+## Incident response
+
+### Reporting security issues
+
+If you discover a security vulnerability:
+
+```yaml
+Security Contacts:
+  General Issues: security@aiven.io
+  Critical Issues: Immediate response via support portal
+  Responsible Disclosure: security@aiven.io
+  PGP Key: Available on request
+```
+
+### Aiven's incident response
+
+How Aiven handles security incidents:
+
+<Steps>
+  <Step title="Detection">
+    - Automated monitoring and alerts
+    - Customer reports
+    - Vulnerability disclosures
+  </Step>
+  
+  <Step title="Assessment">
+    - Severity evaluation
+    - Impact analysis
+    - Affected services identification
+  </Step>
+  
+  <Step title="Containment">
+    - Immediate threat mitigation
+    - Service isolation if needed
+    - Prevent spread
+  </Step>
+  
+  <Step title="Remediation">
+    - Fix underlying vulnerability
+    - Deploy patches
+    - Verify resolution
+  </Step>
+  
+  <Step title="Communication">
+    - Customer notification
+    - Status page updates
+    - Incident reports for serious issues
+  </Step>
+  
+  <Step title="Post-incident review">
+    - Root cause analysis
+    - Process improvements
+    - Documentation updates
+  </Step>
+</Steps>
+
+## Time synchronization
+
+Accurate time across all services:
+
+- **NTP servers:** Cloud provider trusted NTP
+- **Backend services:** Synchronized time
+- **Customer services:** Synchronized time
+- **Region-specific:** NTP servers in deployment region
+
+```yaml
+Time Synchronization:
+  Protocol: NTP (Network Time Protocol)
+  Servers: Cloud provider NTP servers
+  Scope: All backend and customer services
+  Accuracy: Sub-second precision
+  Region: Matches service deployment region
+```
+
+## Resources and documentation
+
+<CardGroup cols={2}>
+  <Card title="Security Whitepapers" icon="file-alt">
+    Detailed technical documentation on Aiven's security architecture
+  </Card>
+  <Card title="Compliance Reports" icon="file-certificate">
+    SOC 2, ISO 27001, and other compliance reports (available to customers)
+  </Card>
+  <Card title="Data Processing Agreement" icon="file-contract">
+    GDPR compliance documentation
+  </Card>
+  <Card title="Responsibility Matrix" icon="table">
+    Shared responsibility model for security
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/platform/authentication">
+    Configure SSO and authentication policies
+  </Card>
+  <Card title="VPC & Networking" icon="network-wired" href="/platform/vpc-and-networking">
+    Set up private network connectivity
+  </Card>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Implement least privilege access control
+  </Card>
+  <Card title="Monitoring & Logs" icon="chart-line" href="/platform/monitoring-and-logs">
+    Set up security monitoring and logging
+  </Card>
+</CardGroup>

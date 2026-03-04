@@ -1,0 +1,696 @@
+---
+title: Aiven for Valkey
+description: Fully managed high-performance in-memory NoSQL database service, Redis-compatible with BSD-3 license for caching and real-time applications.
+---
+
+Aiven for Valkey is a fully managed in-memory NoSQL database service that offers high performance, scalability, and security. As an open-source Redis-compatible alternative under the Linux Foundation, Valkey ensures freedom from restrictive licensing while maintaining full compatibility with Redis OSS 7.2.4.
+
+## Overview
+
+Valkey is an open-source fork of Redis designed to provide a seamless and reliable alternative to Redis OSS. With Aiven for Valkey, you can leverage high-performance in-memory data storage for caching, session management, real-time analytics, and more.
+
+### Why Choose Aiven for Valkey
+
+<CardGroup cols={2}>
+  <Card title="Open Source" icon="code-branch">
+    Licensed under permissive BSD-3 license, ensuring open-source availability and freedom
+  </Card>
+  <Card title="Redis Compatible" icon="check">
+    Fully compatible with Redis OSS 7.2.4 for seamless migration
+  </Card>
+  <Card title="High Performance" icon="bolt">
+    In-memory data store with microsecond latency for real-time applications
+  </Card>
+  <Card title="Rich Data Structures" icon="cubes">
+    Strings, hashes, lists, sets, sorted sets, bitmaps, hyperloglogs, and streams
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Data Structures">
+    Valkey supports multiple data structures:
+
+    - **Strings**: Simple key-value pairs
+    - **Hashes**: Field-value pairs (like objects)
+    - **Lists**: Ordered collections
+    - **Sets**: Unordered unique collections
+    - **Sorted Sets**: Ordered sets with scores
+    - **Bitmaps**: Bit-level operations
+    - **HyperLogLogs**: Probabilistic counting
+    - **Geospatial**: Location-based data
+    - **Streams**: Log-like data structures
+  </Accordion>
+
+  <Accordion title="High Availability">
+    Built-in replication and failover:
+
+    - Primary-replica replication
+    - Automatic failover
+    - Sentinel for monitoring
+    - Persistence options (RDB, AOF)
+    - Business and Premium plans
+  </Accordion>
+
+  <Accordion title="Pub/Sub Messaging">
+    Real-time messaging capabilities:
+
+    - Channel-based messaging
+    - Pattern-based subscriptions
+    - Message broadcasting
+    - Event-driven architectures
+  </Accordion>
+
+  <Accordion title="Lua Scripting">
+    Server-side scripting:
+
+    - Atomic operations
+    - Complex logic execution
+    - Reduced network overhead
+    - Custom commands
+  </Accordion>
+
+  <Accordion title="Persistence">
+    Durable data storage options:
+
+    - **RDB**: Point-in-time snapshots
+    - **AOF**: Append-only file logging
+    - Automatic backups every 24 hours
+    - Configurable retention periods
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Valkey Service">
+    Deploy a Valkey service:
+
+    ```bash
+    avn service create my-valkey \
+      --service-type valkey \
+      --cloud aws-us-east-1 \
+      --plan business-4
+    ```
+  </Step>
+
+  <Step title="Get Connection URI">
+    Retrieve connection details:
+
+    ```bash
+    avn service get my-valkey --format '{service_uri}'
+    ```
+
+    Format: `valkeys://default:password@host:port`
+  </Step>
+
+  <Step title="Connect with CLI">
+    Using valkey-cli or redis-cli:
+
+    ```bash
+    valkey-cli -h valkey-service.aivencloud.com \
+      -p 12345 \
+      -a your-password \
+      --tls
+    ```
+  </Step>
+
+  <Step title="Run Commands">
+    ```bash
+    # Set a key
+    SET mykey "Hello Valkey"
+
+    # Get a key
+    GET mykey
+
+    # Set with expiration (60 seconds)
+    SETEX session:user123 60 "user_data"
+
+    # Check TTL
+    TTL session:user123
+    ```
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import valkey
+    import ssl
+
+    # Create SSL context
+    ssl_context = ssl.create_default_context()
+
+    # Connect to Valkey
+    client = valkey.Valkey(
+        host='valkey-service.aivencloud.com',
+        port=12345,
+        password='your-password',
+        ssl=True,
+        ssl_cert_reqs='required',
+        ssl_ca_certs='/path/to/ca.pem'
+    )
+
+    # String operations
+    client.set('user:1:name', 'John Doe')
+    name = client.get('user:1:name')
+    print(name.decode('utf-8'))
+
+    # Hash operations
+    client.hset('user:1', mapping={
+        'name': 'John Doe',
+        'email': 'john@example.com',
+        'age': 30
+    })
+    user_data = client.hgetall('user:1')
+
+    # List operations
+    client.lpush('queue:tasks', 'task1', 'task2', 'task3')
+    task = client.rpop('queue:tasks')
+
+    # Set operations
+    client.sadd('tags:post:1', 'python', 'valkey', 'database')
+    tags = client.smembers('tags:post:1')
+
+    # Sorted set operations
+    client.zadd('leaderboard', {
+        'player1': 1000,
+        'player2': 1500,
+        'player3': 1200
+    })
+    top_players = client.zrevrange('leaderboard', 0, 2, withscores=True)
+
+    # Expiration
+    client.setex('session:abc123', 3600, 'session_data')
+
+    # Pipeline for batch operations
+    pipe = client.pipeline()
+    pipe.set('key1', 'value1')
+    pipe.set('key2', 'value2')
+    pipe.get('key1')
+    results = pipe.execute()
+
+    client.close()
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const { createClient } = require('redis'); // Compatible with Valkey
+    const fs = require('fs');
+
+    const client = createClient({
+      socket: {
+        host: 'valkey-service.aivencloud.com',
+        port: 12345,
+        tls: true,
+        ca: fs.readFileSync('./ca.pem')
+      },
+      password: 'your-password'
+    });
+
+    await client.connect();
+
+    // String operations
+    await client.set('counter', 0);
+    await client.incr('counter');
+    const counter = await client.get('counter');
+    console.log(`Counter: ${counter}`);
+
+    // Hash operations
+    await client.hSet('product:100', {
+      name: 'Widget',
+      price: '19.99',
+      stock: '50'
+    });
+    const product = await client.hGetAll('product:100');
+
+    // List operations
+    await client.lPush('notifications', 'New message');
+    const notification = await client.rPop('notifications');
+
+    // Set operations
+    await client.sAdd('online_users', 'user1', 'user2', 'user3');
+    const isOnline = await client.sIsMember('online_users', 'user1');
+
+    // Sorted set with timestamps
+    await client.zAdd('recent_posts', [
+      { score: Date.now(), value: 'post1' },
+      { score: Date.now() + 1000, value: 'post2' }
+    ]);
+
+    // Pub/Sub
+    const subscriber = client.duplicate();
+    await subscriber.connect();
+    
+    await subscriber.subscribe('notifications', (message) => {
+      console.log('Received:', message);
+    });
+
+    await client.publish('notifications', 'Hello World');
+
+    // Transaction
+    await client.multi()
+      .incr('visits')
+      .incr('page_views')
+      .exec();
+
+    await client.disconnect();
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        \"context\"
+        \"fmt\"
+        \"github.com/valkey-io/valkey-go\"
+    )
+
+    func main() {
+        ctx := context.Background()
+
+        // Create client
+        client, err := valkey.NewClient(valkey.ClientOption{
+            InitAddress: []string{\"valkey-service.aivencloud.com:12345\"},
+            Password:    \"your-password\",
+            TLSConfig:   &tls.Config{},
+        })
+        if err != nil {
+            panic(err)
+        }
+        defer client.Close()
+
+        // Set and get
+        err = client.Do(ctx, client.B().Set().Key(\"key\").Value(\"hello world\").Build()).Error()
+        if err != nil {
+            panic(err)
+        }
+
+        result, err := client.Do(ctx, client.B().Get().Key(\"key\").Build()).ToString()
+        if err != nil {
+            panic(err)
+        }
+        fmt.Println(\"The value of key is:\", result)
+
+        // Hash operations
+        client.Do(ctx, client.B().Hset().Key(\"user:1\").
+            FieldValue().FieldValue(\"name\", \"John\").FieldValue(\"age\", \"30\").
+            Build())
+
+        // List operations
+        client.Do(ctx, client.B().Lpush().Key(\"tasks\").Element(\"task1\").Element(\"task2\").Build())
+
+        // Set with expiration
+        client.Do(ctx, client.B().Setex().Key(\"session\").Seconds(3600).Value(\"data\").Build())
+    }
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import redis.clients.jedis.Jedis;
+    import redis.clients.jedis.JedisPool;
+    import redis.clients.jedis.JedisPoolConfig;
+    import javax.net.ssl.SSLSocketFactory;
+
+    public class ValkeyExample {
+        public static void main(String[] args) {
+            JedisPoolConfig poolConfig = new JedisPoolConfig();
+            poolConfig.setMaxTotal(10);
+
+            JedisPool pool = new JedisPool(
+                poolConfig,
+                \"valkey-service.aivencloud.com\",
+                12345,
+                2000,
+                \"your-password\",
+                true // Use SSL
+            );
+
+            try (Jedis jedis = pool.getResource()) {
+                // String operations
+                jedis.set(\"message\", \"Hello Valkey\");
+                String message = jedis.get(\"message\");
+                System.out.println(message);
+
+                // Hash operations
+                jedis.hset(\"user:1\", \"name\", \"John Doe\");
+                jedis.hset(\"user:1\", \"email\", \"john@example.com\");
+                Map<String, String> user = jedis.hgetAll(\"user:1\");
+
+                // List operations
+                jedis.lpush(\"logs\", \"Error: Connection failed\");
+                jedis.lpush(\"logs\", \"Warning: High memory usage\");
+                List<String> logs = jedis.lrange(\"logs\", 0, -1);
+
+                // Set operations
+                jedis.sadd(\"tags\", \"java\", \"valkey\", \"cache\");
+                Set<String> tags = jedis.smembers(\"tags\");
+
+                // Sorted set
+                jedis.zadd(\"scores\", 100, \"player1\");
+                jedis.zadd(\"scores\", 200, \"player2\");
+                Set<String> topPlayers = jedis.zrevrange(\"scores\", 0, 1);
+
+                // Expiration
+                jedis.setex(\"temp_key\", 60, \"temporary_data\");
+
+                // Pipeline
+                Pipeline pipeline = jedis.pipelined();
+                pipeline.set(\"key1\", \"value1\");
+                pipeline.set(\"key2\", \"value2\");
+                pipeline.incr(\"counter\");
+                pipeline.sync();
+
+            } finally {
+                pool.close();
+            }
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Common Use Cases
+
+<Tabs>
+  <Tab title="Caching\">
+    Improve application performance with caching:
+
+    ```python
+    import valkey
+    import json
+
+    client = valkey.Valkey(host='valkey-service', port=12345, password='pwd', ssl=True)
+
+    def get_user_profile(user_id):
+        cache_key = f\"user:profile:{user_id}\"
+        
+        # Try cache first
+        cached = client.get(cache_key)
+        if cached:
+            return json.loads(cached)
+        
+        # Fetch from database
+        user_profile = fetch_from_database(user_id)
+        
+        # Cache for 1 hour
+        client.setex(
+            cache_key,
+            3600,
+            json.dumps(user_profile)
+        )
+        
+        return user_profile
+    ```
+  </Tab>
+
+  <Tab title="Session Storage">
+    Store user sessions:
+
+    ```python
+    def create_session(user_id, session_data):
+        session_id = generate_session_id()
+        session_key = f\"session:{session_id}\"
+        
+        # Store session with 24 hour expiration
+        client.setex(
+            session_key,
+            86400,  # 24 hours
+            json.dumps({
+                'user_id': user_id,
+                'data': session_data,
+                'created_at': time.time()
+            })
+        )
+        
+        return session_id
+
+    def get_session(session_id):
+        session_key = f\"session:{session_id}\"
+        session_data = client.get(session_key)
+        
+        if session_data:
+            # Refresh expiration
+            client.expire(session_key, 86400)
+            return json.loads(session_data)
+        
+        return None
+    ```
+  </Tab>
+
+  <Tab title="Rate Limiting">
+    Implement rate limiting:
+
+    ```python
+    def check_rate_limit(user_id, limit=100, window=60):
+        key = f\"rate_limit:{user_id}\"
+        
+        pipe = client.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, window)
+        results = pipe.execute()
+        
+        request_count = results[0]
+        
+        return request_count <= limit
+    ```
+  </Tab>
+
+  <Tab title="Real-Time Analytics">
+    Track metrics in real-time:
+
+    ```python
+    # Increment counters
+    client.incr('page_views:homepage')
+    client.incr(f'page_views:{date}')
+    
+    # Add to sorted set with timestamp
+    client.zadd('events', {
+        json.dumps(event_data): time.time()
+    })
+    
+    # Get recent events (last 5 minutes)
+    recent_events = client.zrangebyscore(
+        'events',
+        time.time() - 300,
+        time.time()
+    )
+    
+    # Track unique visitors with HyperLogLog
+    client.pfadd('unique_visitors:today', user_id)
+    unique_count = client.pfcount('unique_visitors:today')
+    ```
+  </Tab>
+
+  <Tab title="Job Queues">
+    Implement background job processing:
+
+    ```python
+    # Producer
+    def enqueue_job(queue_name, job_data):
+        job = json.dumps(job_data)
+        client.lpush(f\"queue:{queue_name}\", job)
+
+    # Consumer
+    def process_jobs(queue_name):
+        while True:
+            # Blocking pop (wait for job)
+            job = client.brpop(f\"queue:{queue_name}\", timeout=5)
+            
+            if job:
+                queue, job_data = job
+                job_obj = json.loads(job_data)
+                
+                try:
+                    process_job(job_obj)
+                except Exception as e:
+                    # Move to failed queue
+                    client.lpush(f\"queue:{queue_name}:failed\", job_data)
+    ```
+  </Tab>
+
+  <Tab title="Pub/Sub">
+    Real-time messaging:
+
+    ```python
+    # Publisher
+    def send_notification(channel, message):
+        client.publish(channel, json.dumps(message))
+
+    # Subscriber
+    def listen_for_notifications():
+        pubsub = client.pubsub()
+        pubsub.subscribe('notifications', 'alerts')
+        
+        for message in pubsub.listen():
+            if message['type'] == 'message':
+                data = json.loads(message['data'])
+                handle_notification(data)
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Tips
+
+<AccordionGroup>
+  <Accordion title="Connection Pooling">
+    Use connection pools to reuse connections:
+
+    ```python
+    from valkey import ConnectionPool, Valkey
+
+    pool = ConnectionPool(
+        host='valkey-service.aivencloud.com',
+        port=12345,
+        password='your-password',
+        ssl=True,
+        max_connections=50
+    )
+
+    client = Valkey(connection_pool=pool)
+    ```
+  </Accordion>
+
+  <Accordion title="Pipelining">
+    Batch multiple commands:
+
+    ```python
+    pipe = client.pipeline()
+    for i in range(1000):
+        pipe.set(f'key:{i}', f'value:{i}')
+    pipe.execute()
+    ```
+  </Accordion>
+
+  <Accordion title="Efficient Data Structures">
+    Choose the right data structure:
+
+    - Use hashes for objects (more memory efficient than multiple keys)
+    - Use sorted sets for rankings
+    - Use bitmaps for boolean flags
+    - Use HyperLogLog for approximate counting
+  </Accordion>
+
+  <Accordion title="Key Expiration">
+    Set expiration to manage memory:
+
+    ```python
+    # Set expiration on key creation
+    client.setex('temp_data', 3600, 'value')
+
+    # Set expiration on existing key
+    client.expire('existing_key', 7200)
+
+    # Get TTL
+    ttl = client.ttl('temp_data')
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring and Maintenance
+
+### Key Metrics
+
+<CardGroup cols={2}>
+  <Card title="Performance" icon="gauge">
+    - Operations per second
+    - Hit rate
+    - Latency (avg, p95, p99)
+    - Network throughput
+  </Card>
+
+  <Card title="Memory" icon="memory">
+    - Used memory
+    - Memory fragmentation
+    - Evicted keys
+    - Key count
+  </Card>
+
+  <Card title="Replication" icon="copy">
+    - Replication lag
+    - Connected replicas
+    - Replication offset
+  </Card>
+
+  <Card title="Connections" icon="link">
+    - Connected clients
+    - Blocked clients
+    - Connection errors
+  </Card>
+</CardGroup>
+
+### Monitoring Commands
+
+```bash
+# Server info
+INFO
+
+# Memory stats
+INFO memory
+
+# Replication status
+INFO replication
+
+# Client list
+CLIENT LIST
+
+# Slow log
+SLOWLOG GET 10
+
+# Monitor commands in real-time
+MONITOR
+```
+
+## Migration from Redis
+
+<Steps>
+  <Step title="Compatibility Check">
+    Valkey is fully compatible with Redis OSS 7.2.4. Most applications work without changes.
+  </Step>
+
+  <Step title="Update Connection Strings">
+    Simply point your application to the new Valkey service URI.
+  </Step>
+
+  <Step title="Test Your Application">
+    Verify all functionality works as expected with Valkey.
+  </Step>
+
+  <Step title="Monitor Performance">
+    Compare performance metrics to ensure expected behavior.
+  </Step>
+</Steps>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Use Valkey for Kafka consumer offset caching
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Cache PostgreSQL query results in Valkey
+  </Card>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Monitor Valkey metrics in Grafana
+  </Card>
+  <Card title="Dragonfly" icon="rocket" href="/services/dragonfly">
+    Alternative in-memory store for higher scale
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Valkey GitHub Repository](https://github.com/valkey-io/valkey)
+- [Valkey Documentation](https://valkey.io/docs/)
+- [Redis to Valkey Migration](https://valkey.io/topics/migration/)
+
+<Note>
+  **Redis Compatibility**: Valkey is fully compatible with Redis OSS 7.2.4, ensuring a smooth transition for existing Redis applications.
+</Note>

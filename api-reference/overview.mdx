@@ -1,0 +1,107 @@
+---
+title: API Overview
+description: Introduction to the Aiven REST API for programmatic access and automation
+---
+
+The Aiven API provides programmatic access to the Aiven platform, enabling you to automate tasks, integrate with existing systems, and manage your infrastructure as code.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+https://api.aiven.io/v1
+```
+
+## Common use cases
+
+The Aiven API is commonly used for:
+
+- **Continuous integration**: Create services during test runs and tear them down automatically
+- **Infrastructure automation**: Deploy and manage services as part of your existing automation workflows
+- **Scheduled operations**: Deploy and tear down development or demo platforms on a schedule
+- **Dynamic scaling**: Scale your disks or service plans based on specific events or metrics
+- **Multi-cloud management**: Manage services across different cloud providers from a single interface
+
+## API characteristics
+
+- **RESTful design**: Uses standard HTTP methods (GET, POST, PUT, DELETE)
+- **JSON format**: All requests and responses use JSON
+- **Token authentication**: Secure access using personal or application tokens
+- **Versioned endpoints**: API version is included in the URL path (`/v1`)
+- **Idempotent operations**: Safe to retry failed requests
+
+## Getting started
+
+1. [Create an authentication token](/docs/platform/howto/create_authentication_token)
+2. Include the token in the `Authorization` header with your requests
+3. Start making API calls to manage your resources
+
+### Quick example
+
+List all your projects:
+
+<CodeGroup>
+```bash cURL
+curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+  https://api.aiven.io/v1/project
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN"
+}
+
+response = requests.get(
+    "https://api.aiven.io/v1/project",
+    headers=headers
+)
+
+projects = response.json()
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aiven.io/v1/project', {
+  headers: {
+    'Authorization': 'aivenv1 YOUR_TOKEN'
+  }
+});
+
+const projects = await response.json();
+```
+</CodeGroup>
+
+## Try the API
+
+You can explore and test the Aiven API using:
+
+- **Postman workspace**: [Fork the Aiven collection](https://www.postman.com/aiven-apis/workspace/aiven/overview)
+- **Full API reference**: [Complete documentation](https://api.aiven.io/doc/)
+- **Aiven CLI**: [Command-line interface](/docs/tools/cli) built on the API
+
+## Rate limiting
+
+The Aiven API implements rate limiting to ensure fair usage. If you exceed the rate limit, you'll receive a `429 Too Many Requests` response. Implement exponential backoff in your client code to handle rate limiting gracefully.
+
+## API stability
+
+Aiven maintains backward compatibility within API versions. The current stable version is `v1`. Breaking changes will be introduced in new API versions with advance notice.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Learn how to authenticate your API requests
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/api-reference/errors">
+    Understand error codes and responses
+  </Card>
+  <Card title="Projects" icon="folder" href="/api-reference/projects">
+    Manage projects and organizations
+  </Card>
+  <Card title="Services" icon="server" href="/api-reference/services">
+    Create and manage Aiven services
+  </Card>
+</CardGroup>

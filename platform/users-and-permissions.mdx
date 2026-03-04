@@ -1,0 +1,681 @@
+---
+title: Users and Permissions
+description: Learn how to manage users, groups, roles, and permissions in your Aiven organization.
+---
+
+Aiven's role-based access control (RBAC) system lets you manage who can access your organization's resources and what actions they can perform. Users can be granted roles and permissions at the organization, organizational unit, or project level.
+
+## User types
+
+Aiven supports several types of users with different characteristics:
+
+<CardGroup cols={2}>
+  <Card title="Organization Users" icon="user">
+    **Human users** - Individual team members
+    
+    - Personal email addresses
+    - Can log in to Aiven Console
+    - Subject to authentication policies
+    - Can belong to groups
+  </Card>
+  
+  <Card title="Application Users" icon="robot">
+    **Non-human users** - For automation and integrations
+    
+    - Programmatic access only
+    - Cannot log in to Console
+    - Not subject to authentication policies
+    - Use tokens for API/CLI/Terraform
+  </Card>
+  
+  <Card title="Managed Users" icon="user-lock">
+    **Centrally controlled** - With verified domain
+    
+    - Same as organization users
+    - Restricted from creating organizations
+    - Cannot edit their own profile
+    - Managed by organization admins
+  </Card>
+  
+  <Card title="Groups" icon="users">
+    **Collections of users** - For bulk access management
+    
+    - Contain organization and application users
+    - Simplify permission grants
+    - Organization-wide scope
+  </Card>
+</CardGroup>
+
+### Super Admin vs Organization Admin
+
+<Tabs>
+  <Tab title="Super Admin">
+    **Unrestricted access** to everything:
+    
+    - All organization resources and settings
+    - Can rename and delete the organization
+    - Can manage other super admins
+    - Can manage authentication policy
+    - Full billing access
+    - Cannot be removed by other admins
+    
+    <Warning>
+    Limit super admin access to only essential personnel for security.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Organization Admin">
+    **Full access except:**
+    
+    - Cannot delete organization
+    - Cannot rename organization
+    - Cannot manage super admins
+    
+    **Can do everything else:**
+    - Manage all units, projects, services
+    - Full billing access
+    - Manage users, groups, domains, IdPs
+    - Configure authentication policy
+    - Create and delete organizational units
+  </Tab>
+</Tabs>
+
+## Roles and permissions
+
+Aiven uses two concepts for access control:
+
+- **Roles** - Predefined sets of permissions for common scenarios
+- **Permissions** - Granular actions on specific resources
+
+<Note>
+Roles and permissions are **cumulative**. A user's effective access is the combination of all roles and permissions granted directly to them and through groups they belong to.
+</Note>
+
+### Organization roles
+
+<ParamField path="role:organization:admin" type="Role">
+  **Admin** - Full access to the organization
+  
+  **Allowed actions:**
+  - View and change billing information
+  - Change authentication policy
+  - Create and delete organizational units and projects
+  - Move projects between units
+  - Invite, deactivate, and remove users
+  - Create, edit, and delete groups
+  - Manage application users
+  - Add and remove domains
+  - Manage identity providers
+  
+  **Cannot:**
+  - Delete organization
+  - Manage super admins
+</ParamField>
+
+### Project roles
+
+<Tabs>
+  <Tab title="Admin">
+    **Full project access**
+    
+    - All services in the project
+    - Project configuration
+    - Cannot modify billing group
+    
+    ```bash
+    # Grant admin role at project level
+    avn project user-invite \
+      --project my-project \
+      --email user@company.com \
+      --role admin
+    ```
+  </Tab>
+  
+  <Tab title="Operator">
+    **Manage services and infrastructure**
+    
+    - Create, edit, delete services
+    - Configure VPCs and peering
+    - Manage service integrations
+    - Update IP allowlists
+    - View logs
+    
+    ```bash
+    avn project user-invite \
+      --project my-project \
+      --email user@company.com \
+      --role operator
+    ```
+  </Tab>
+  
+  <Tab title="Developer">
+    **Read-only plus data access**
+    
+    - View project and services
+    - View connection information
+    - Create databases and users
+    - No infrastructure changes
+    
+    ```bash
+    avn project user-invite \
+      --project my-project \
+      --email user@company.com \
+      --role developer
+    ```
+  </Tab>
+  
+  <Tab title="Read Only">
+    **View-only access**
+    
+    - View services and configuration
+    - View project event log
+    - View tags and permissions
+    - No changes allowed
+    
+    ```bash
+    avn project user-invite \
+      --project my-project \
+      --email user@company.com \
+      --role read_only
+    ```
+  </Tab>
+</Tabs>
+
+### Granular permissions
+
+For more precise control, grant individual permissions:
+
+<AccordionGroup>
+  <Accordion title="Organization permissions">
+    <ParamField path="organization:app_users:write" type="Permission">
+      Create, edit, and delete application users
+    </ParamField>
+    
+    <ParamField path="organization:audit_logs:read" type="Permission">
+      View organization audit log
+    </ParamField>
+    
+    <ParamField path="organization:billing:read" type="Permission">
+      View billing groups, invoices, and costs (read-only)
+    </ParamField>
+    
+    <ParamField path="organization:billing:write" type="Permission">
+      Manage billing groups, payment methods, and addresses
+    </ParamField>
+    
+    <ParamField path="organization:domains:write" type="Permission">
+      Add, edit, and remove domains
+    </ParamField>
+    
+    <ParamField path="organization:groups:write" type="Permission">
+      Create and delete groups, manage group membership
+    </ParamField>
+    
+    <ParamField path="organization:networking:read" type="Permission">
+      View organization VPCs
+    </ParamField>
+    
+    <ParamField path="organization:networking:write" type="Permission">
+      Create and manage organization VPCs and peering
+    </ParamField>
+    
+    <ParamField path="organization:projects:write" type="Permission">
+      Create and delete projects (cannot access project contents)
+    </ParamField>
+    
+    <ParamField path="organization:users:write" type="Permission">
+      Invite, deactivate, edit, and remove users
+    </ParamField>
+  </Accordion>
+  
+  <Accordion title="Project permissions">
+    <ParamField path="project:audit_logs:read" type="Permission">
+      View project logs
+    </ParamField>
+    
+    <ParamField path="project:integrations:read" type="Permission">
+      View integration endpoints and service integrations
+    </ParamField>
+    
+    <ParamField path="project:integrations:write" type="Permission">
+      Create and manage integration endpoints and integrations
+    </ParamField>
+    
+    <ParamField path="project:networking:read" type="Permission">
+      View project VPCs and peering connections
+    </ParamField>
+    
+    <ParamField path="project:networking:write" type="Permission">
+      Create and manage project VPCs and peering
+    </ParamField>
+    
+    <ParamField path="project:services:read" type="Permission">
+      View service details (except logs and metrics)
+    </ParamField>
+    
+    <ParamField path="project:services:write" type="Permission">
+      Create, delete, and manage services
+    </ParamField>
+    
+    <ParamField path="service:configuration:write" type="Permission">
+      Change service configuration (cloud, region, network settings)
+    </ParamField>
+    
+    <ParamField path="service:data:write" type="Permission">
+      Perform queries, manage Kafka topics, PostgreSQL pools, etc.
+    </ParamField>
+    
+    <ParamField path="service:logs:read" type="Permission">
+      View service logs (may contain sensitive information)
+    </ParamField>
+    
+    <ParamField path="service:secrets:read" type="Permission">
+      Read service secrets and view service users
+    </ParamField>
+    
+    <ParamField path="service:users:write" type="Permission">
+      Create and manage service users and credentials
+    </ParamField>
+  </Accordion>
+</AccordionGroup>
+
+## Managing organization users
+
+### Inviting users
+
+<Steps>
+  <Step title="Navigate to users">
+    Click **Admin** → **Users** in the organization
+  </Step>
+  <Step title="Send invitation">
+    Click **Invite users** → Enter email addresses → Click **Send invitations**
+  </Step>
+  <Step title="Grant access">
+    Assign roles/permissions at the organization, unit, or project level
+  </Step>
+  <Step title="User accepts">
+    Invited user receives email and creates Aiven account (or logs in)
+  </Step>
+</Steps>
+
+```bash
+# Invite user via CLI
+avn organization user-invite \
+  --organization-id <ORG_ID> \
+  --email user@company.com
+
+# Grant organization admin role
+avn organization user-permission-grant \
+  --organization-id <ORG_ID> \
+  --user-email user@company.com \
+  --role role:organization:admin
+
+# Grant project admin role  
+avn project user-invite \
+  --project my-project \
+  --email user@company.com \
+  --role admin
+```
+
+### Removing users
+
+<Warning>
+Removing a user from the organization revokes all their access to the organization's resources.
+</Warning>
+
+```bash
+# Remove user from organization
+avn organization user-remove \
+  --organization-id <ORG_ID> \
+  --user-id <USER_ID>
+
+# Remove user from specific project
+avn project user-remove \
+  --project my-project \
+  --email user@company.com
+```
+
+### Deactivating managed users
+
+For organizations with verified domains, you can deactivate users:
+
+<Steps>
+  <Step title="Go to users page">
+    **Admin** → **Users**
+  </Step>
+  <Step title="Deactivate">
+    Find user → Click **Actions** → **Deactivate**
+  </Step>
+  <Step title="User cannot log in">
+    Deactivated users lose all access immediately
+  </Step>
+  <Step title="Reactivate if needed">
+    Use same process to reactivate the user
+  </Step>
+</Steps>
+
+## Managing application users
+
+Application users provide secure programmatic access for automation, CI/CD, and integrations.
+
+### Creating application users
+
+<Steps>
+  <Step title="Navigate to application users">
+    **Admin** → **Application users**
+  </Step>
+  <Step title="Create user">
+    Click **Create application user** → Enter name and description
+  </Step>
+  <Step title="Generate token">
+    Click **Generate token** → Set expiration and allowed IP ranges
+  </Step>
+  <Step title="Save token">
+    Copy token immediately (cannot be retrieved later)
+  </Step>
+  <Step title="Grant permissions">
+    Assign permissions at organization, unit, or project level
+  </Step>
+</Steps>
+
+```bash
+# Create application user
+avn organization application-user-create \
+  --organization-id <ORG_ID> \
+  --name "Terraform Automation" \
+  --description "For managing infrastructure"
+
+# Generate token
+avn organization application-user-token-create \
+  --organization-id <ORG_ID> \
+  --user-id <APP_USER_ID> \
+  --description "Production Terraform" \
+  --max-age-seconds 7776000  # 90 days
+
+# Grant project admin permission
+avn project user-permission-grant \
+  --project my-project \
+  --application-user-id <APP_USER_ID> \
+  --role admin
+```
+
+### Application user best practices
+
+<Steps>
+  <Step title="Create dedicated users per tool">
+    Separate application users for Terraform, CI/CD, monitoring, etc.
+  </Step>
+  <Step title="Use descriptive names">
+    Clearly indicate purpose: "GitHub Actions CI", "Datadog Integration"
+  </Step>
+  <Step title="Restrict IP ranges">
+    Limit tokens to trusted networks:
+    ```bash
+    avn organization application-user-token-create \
+      --organization-id <ORG_ID> \
+      --user-id <APP_USER_ID> \
+      --cidr-blocks "203.0.113.0/24,198.51.100.0/24"
+    ```
+  </Step>
+  <Step title="Rotate tokens regularly">
+    Revoke and regenerate tokens every 90 days:
+    ```bash
+    # Revoke token
+    avn organization application-user-token-revoke \
+      --organization-id <ORG_ID> \
+      --user-id <APP_USER_ID> \
+      --token-id <TOKEN_ID>
+    ```
+  </Step>
+  <Step title="Use least privilege">
+    Grant only the minimum permissions needed
+  </Step>
+  <Step title="Audit regularly">
+    Review application users and delete unused ones
+  </Step>
+</Steps>
+
+<Warning>
+Application users can have organization admin access. Secure their tokens carefully to prevent abuse.
+</Warning>
+
+## Managing groups
+
+Groups simplify permission management by allowing you to grant access to multiple users at once.
+
+### Creating groups
+
+<Steps>
+  <Step title="Navigate to groups">
+    **Admin** → **Groups**
+  </Step>
+  <Step title="Create group">
+    Click **Create group** → Enter name and description
+  </Step>
+  <Step title="Add members">
+    Add organization users and application users to the group
+  </Step>
+  <Step title="Grant permissions">
+    Assign roles/permissions to the group at organization, unit, or project level
+  </Step>
+</Steps>
+
+```bash
+# Create group
+avn organization group-create \
+  --organization-id <ORG_ID> \
+  --group-name "Backend Team" \
+  --description "Backend engineering team"
+
+# Add users to group
+avn organization group-member-add \
+  --organization-id <ORG_ID> \
+  --group-id <GROUP_ID> \
+  --user-id <USER_ID>
+
+# Grant group access to project
+avn project user-invite \
+  --project backend-prod \
+  --group-id <GROUP_ID> \
+  --role admin
+```
+
+### Example group structure
+
+<CodeGroup>
+```yaml Engineering Team
+Name: Engineering Team
+Members:
+  - alice@company.com
+  - bob@company.com
+  - charlie@company.com
+  
+Permissions:
+  Organization:
+    - organization:projects:write
+  Unit (Engineering):
+    - role:organization:admin (unit level)
+  Projects:
+    - backend-dev: admin
+    - backend-prod: operator
+    - frontend-dev: admin
+```
+
+```yaml Finance Team
+Name: Finance Team  
+Members:
+  - finance@company.com
+  - accounting@company.com
+  
+Permissions:
+  Organization:
+    - organization:billing:read
+    - organization:billing:write
+```
+
+```yaml CI/CD Automation
+Name: CI/CD Automation
+Members:
+  - github-actions (application user)
+  - gitlab-ci (application user)
+  
+Permissions:
+  Projects:
+    - backend-dev: operator
+    - frontend-dev: operator
+```
+</CodeGroup>
+
+## Permission inheritance
+
+Permissions granted at higher levels automatically apply to lower levels:
+
+```
+Organization (organization:projects:write)
+└── Unit: Production
+    └── Project: backend-prod (admin role)
+        └── Service: postgres-1
+        └── Service: redis-1
+```
+
+**User with both permissions can:**
+- Create projects anywhere in organization (`organization:projects:write`)
+- Fully manage backend-prod project and all its services (`admin` role)
+
+<Note>
+**Permissions are cumulative, not restrictive.** A less permissive role at project level does NOT override more permissive permissions from organization level.
+</Note>
+
+### Example: Cumulative permissions
+
+```
+User: alice@company.com
+
+Permissions granted:
+1. Organization level: project:services:write
+2. Project level: read_only role
+
+Effective access on project:
+- Can read all project details (from read_only)
+- Can create and delete services (from project:services:write)
+```
+
+The higher-level permission grants write access even though the project-level role is read-only.
+
+## Managed users and domains
+
+Verify your organization's domain to enable managed users:
+
+### Enabling managed users
+
+<Steps>
+  <Step title="Add domain">
+    **Admin** → **Domains** → **Add domain**
+  </Step>
+  <Step title="Verify ownership">
+    Add DNS TXT record to prove domain ownership
+  </Step>
+  <Step title="Users become managed">
+    All users with email addresses on verified domain automatically become managed users
+  </Step>
+</Steps>
+
+### Managed user restrictions
+
+- **Cannot create organizations** - Only organization admins can
+- **Cannot edit profile** - Name, email managed by organization admins
+- **Centralized control** - Organization admins can deactivate, delete, reset passwords
+- **Visible even outside org** - Organization can see all users with their domain
+
+```bash
+# Add domain
+avn organization domain-add \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Get DNS verification record
+avn organization domain-get \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Verify domain after adding DNS record
+avn organization domain-verify \
+  --organization-id <ORG_ID> \
+  --domain company.com
+```
+
+<Note>
+Managed users combined with authentication policies provide the strongest security for your organization.
+</Note>
+
+## Service users
+
+Service users are different from organization/application users - they're database/service-specific accounts:
+
+- **Per-service** - Created within individual services (PostgreSQL, Kafka, etc.)
+- **Service access only** - For connecting applications to services
+- **Managed in service** - Not at organization or project level
+
+```bash
+# Create service user (PostgreSQL example)
+avn service user-create \
+  --project my-project \
+  --service postgres-1 \
+  --username app_user
+
+# Get user credentials
+avn service user-get \
+  --project my-project \
+  --service postgres-1 \
+  --username app_user
+```
+
+<Note>
+Learn more about [authentication methods](/platform/authentication) for accessing services.
+</Note>
+
+## Best practices
+
+<Steps>
+  <Step title="Use groups, not individual grants">
+    Assign permissions to groups instead of individual users for easier management
+  </Step>
+  <Step title="Principle of least privilege">
+    Grant only the minimum access needed for each role
+  </Step>
+  <Step title="Separate production access">
+    Restrict production project access to a smaller group of users
+  </Step>
+  <Step title="Use application users for automation">
+    Never use personal accounts for CI/CD, Terraform, or monitoring integrations
+  </Step>
+  <Step title="Verify your domain">
+    Enable managed users for centralized control and better security
+  </Step>
+  <Step title="Audit regularly">
+    Review users, groups, and permissions quarterly. Remove unused access
+  </Step>
+  <Step title="Document permission structure">
+    Maintain documentation of which groups have access to what resources
+  </Step>
+  <Step title="Use project-level permissions">
+    Grant access at project level when possible, not organization-wide
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/platform/authentication">
+    Configure SSO, SAML, and authentication policies
+  </Card>
+  <Card title="Organizations & Projects" icon="sitemap" href="/platform/organizations-and-projects">
+    Learn how to structure your resources
+  </Card>
+  <Card title="Billing & Payment" icon="credit-card" href="/platform/billing-and-payment">
+    Manage billing permissions for finance team
+  </Card>
+  <Card title="Security" icon="shield" href="/platform/security">
+    Learn about Aiven's security features
+  </Card>
+</CardGroup>

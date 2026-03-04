@@ -1,0 +1,467 @@
+---
+title: Aiven for Metrics
+description: Fully managed Thanos metrics service - a cost-effective, scalable Prometheus solution for long-term metrics storage and global query view.
+---
+
+Aiven for Metrics, powered by Thanos, simplifies the management and analysis of large volumes of metrics data. This fully managed service provides scalable, reliable, and efficient metrics collection, storage, and querying suitable for organizations of all sizes.
+
+## Overview
+
+Aiven for Metrics is built on Thanos, an open-source project that extends Prometheus with unlimited storage capabilities and global query views across multiple Prometheus instances. Store unlimited metrics for any duration with cost-effective object storage.
+
+### Why Choose Aiven for Metrics
+
+<CardGroup cols={2}>
+  <Card title="Unlimited Retention" icon="infinity">
+    Store metrics data for as long as needed with scalable object storage
+  </Card>
+  <Card title="Prometheus Compatible" icon="check">
+    Use existing Prometheus exporters, queries (PromQL), and tools like Grafana
+  </Card>
+  <Card title="Global Query View" icon="globe">
+    Query metrics from multiple Prometheus servers through unified interface
+  </Card>
+  <Card title="Cost-Effective" icon="dollar-sign">
+    Downsampling and compaction reduce storage costs while improving query performance
+  </Card>
+</CardGroup>
+
+## Key Components
+
+Aiven for Metrics includes several Thanos components working together:
+
+<AccordionGroup>
+  <Accordion title="Thanos Metrics Receiver">
+    Ingests metrics into the system:
+
+    - Accepts Prometheus remote write requests
+    - Real-time metrics collection
+    - High-throughput ingestion
+    - Automatic scaling
+    - Data validation
+  </Accordion>
+
+  <Accordion title="Thanos Metrics Query">
+    Query interface for metrics:
+
+    - PromQL query support
+    - Aggregates data from multiple sources
+    - Real-time and historical data
+    - Deduplication of samples
+    - Compatible with Grafana
+  </Accordion>
+
+  <Accordion title="Thanos Metrics Store">
+    Long-term storage interface:
+
+    - Interfaces with object storage
+    - Historical data access
+    - Efficient data retrieval
+    - Scalable storage
+    - Automatic data management
+  </Accordion>
+
+  <Accordion title="Thanos Metrics Compact">
+    Storage optimization:
+
+    - Data compaction
+    - Downsampling for efficiency
+    - Reduces storage costs
+    - Improves query performance
+    - Background processing
+  </Accordion>
+
+  <Accordion title="Thanos Query Frontend">
+    Query optimization layer:
+
+    - Caches query results
+    - Splits large queries
+    - Load distribution
+    - Improved performance
+    - Reduced latency
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Metrics Service">
+    Deploy an Aiven for Metrics service:
+
+    ```bash
+    avn service create my-metrics \
+      --service-type thanos \
+      --cloud aws-us-east-1 \
+      --plan startup-4
+    ```
+  </Step>
+
+  <Step title="Configure Prometheus Remote Write">
+    Point your Prometheus instances to Aiven for Metrics:
+
+    Get the remote write URL:
+    ```bash
+    avn service get my-metrics --format '{service_uri}'
+    ```
+
+    Configure Prometheus:
+    ```yaml
+    # prometheus.yml
+    remote_write:
+      - url: https://thanos-service.aivencloud.com:443/api/v1/receive
+        basic_auth:
+          username: avnadmin
+          password: your-password
+        queue_config:
+          max_samples_per_send: 1000
+          batch_send_deadline: 5s
+          max_shards: 200
+    ```
+  </Step>
+
+  <Step title="Integrate with Grafana">
+    Connect Grafana to query metrics:
+
+    ```bash
+    avn service integration-create \
+      --integration-type metrics \
+      --source-service my-metrics \
+      --dest-service my-grafana
+    ```
+
+    Or add manually in Grafana:
+    - Type: Prometheus
+    - URL: `https://thanos-service.aivencloud.com:443`
+    - Auth: Basic auth with service credentials
+  </Step>
+
+  <Step title="Query Metrics">
+    Use PromQL to query your metrics in Grafana or directly via API.
+  </Step>
+</Steps>
+
+## Architecture and Data Flow
+
+<Steps>
+  <Step title="Data Collection">
+    Prometheus instances send metrics via remote write to Thanos Metrics Receiver
+  </Step>
+
+  <Step title="Real-Time Storage">
+    Receivers store metrics in Time Series Database (TSDB) blocks
+  </Step>
+
+  <Step title="Long-Term Storage">
+    After 2 hours, TSDB blocks are uploaded to object storage
+  </Step>
+
+  <Step title="Query Processing">
+    - Query Frontend receives requests
+    - Distributes to Thanos Query
+    - Query fetches from Receivers (recent data) and Store (historical data)
+    - Deduplicates samples from multiple sources
+    - Returns results with caching
+  </Step>
+
+  <Step title="Data Optimization">
+    Thanos Compact continuously:
+    - Compacts small blocks into larger ones
+    - Downsamples old data (5m, 1h resolutions)
+    - Reduces storage costs
+    - Improves query performance
+  </Step>
+</Steps>
+
+## Query Examples
+
+<Tabs>
+  <Tab title="Basic Queries">
+    ```promql
+    # Current CPU usage
+    100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+    # Memory usage percentage
+    (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100
+
+    # HTTP request rate
+    rate(http_requests_total[5m])
+
+    # Error rate
+    rate(http_requests_total{status=~"5.."}[5m])
+    ```
+  </Tab>
+
+  <Tab title="Aggregations">
+    ```promql
+    # Total requests per service
+    sum by (service) (rate(http_requests_total[5m]))
+
+    # Average response time
+    avg by (endpoint) (http_request_duration_seconds)
+
+    # 95th percentile latency
+    histogram_quantile(0.95,
+      sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+    )
+
+    # Top 5 endpoints by request count
+    topk(5, sum by (endpoint) (rate(http_requests_total[5m])))
+    ```
+  </Tab>
+
+  <Tab title="Time-Based Queries">
+    ```promql
+    # Day-over-day comparison
+    rate(requests_total[5m]) / rate(requests_total[5m] offset 24h)
+
+    # Week-over-week growth
+    (sum(rate(requests_total[7d])) - sum(rate(requests_total[7d] offset 7d)))
+    / sum(rate(requests_total[7d] offset 7d)) * 100
+
+    # Query historical data (6 months ago)
+    avg_over_time(cpu_usage[1h] offset 4320h)
+    ```
+  </Tab>
+
+  <Tab title="Alerts">
+    ```promql
+    # High error rate alert
+    rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+
+    # High memory usage
+    (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+    / node_memory_MemTotal_bytes > 0.90
+
+    # Service down
+    up{job="my-service"} == 0
+
+    # Disk space low
+    (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.10
+    ```
+  </Tab>
+</Tabs>
+
+## Benefits of Aiven for Metrics
+
+<CardGroup cols={2}>
+  <Card title="Centralized Monitoring" icon="chart-simple">
+    Query and analyze metrics from multiple Prometheus servers and clusters through unified view
+  </Card>
+
+  <Card title="Unlimited Retention" icon="database">
+    Store unlimited metric data for any duration with scalable object storage
+  </Card>
+
+  <Card title="Cost-Effective" icon="piggy-bank">
+    Downsampling and compacting reduces storage needs and costs while improving query performance
+  </Card>
+
+  <Card title="Simplified Operations" icon="wrench">
+    Pre-configured Thanos setup eliminates complexity of managing metrics infrastructure
+  </Card>
+
+  <Card title="High Availability" icon="shield">
+    Distributed architecture ensures metrics availability and query reliability
+  </Card>
+
+  <Card title="Grafana Compatible" icon="chart-line">
+    Seamlessly integrate with Grafana for visualization and dashboards
+  </Card>
+</CardGroup>
+
+## Downsampling
+
+Automatic downsampling reduces storage and improves query performance:
+
+<Tabs>
+  <Tab title="Raw Data">
+    **Retention: Recent data**
+    - Original resolution (15s, 30s, 1m)
+    - Used for recent time ranges
+    - Highest accuracy
+    - Larger storage footprint
+  </Tab>
+
+  <Tab title="5-Minute Resolution">
+    **After: 30 days**
+    - Downsampled to 5-minute intervals
+    - Suitable for medium-term analysis
+    - 12x storage reduction
+    - Maintains accuracy for trends
+  </Tab>
+
+  <Tab title="1-Hour Resolution">
+    **After: 180 days**
+    - Downsampled to 1-hour intervals
+    - For long-term analysis
+    - 720x storage reduction
+    - Good for historical trends
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Multi-Cluster Monitoring">
+    Monitor metrics across multiple Kubernetes clusters:
+    - Central metrics aggregation
+    - Cross-cluster queries
+    - Unified alerting
+    - Global service health
+  </Tab>
+
+  <Tab title="Long-Term Storage">
+    Retain metrics for compliance and analysis:
+    - Regulatory compliance (GDPR, HIPAA)
+    - Historical trend analysis
+    - Capacity planning
+    - Year-over-year comparisons
+  </Tab>
+
+  <Tab title="Multi-Region Monitoring">
+    Monitor globally distributed infrastructure:
+    - Regional Prometheus instances
+    - Global query view
+    - Cross-region alerting
+    - Geographic performance analysis
+  </Tab>
+
+  <Tab title="Cost Optimization">
+    Reduce metrics storage costs:
+    - Replace multiple Prometheus instances
+    - Automatic downsampling
+    - Efficient object storage
+    - Query result caching
+  </Tab>
+</Tabs>
+
+## Configuration Examples
+
+### Prometheus Remote Write
+
+```yaml
+# prometheus.yml
+global:
+  external_labels:
+    cluster: 'production-us-east'
+    environment: 'production'
+
+remote_write:
+  - url: https://thanos-service.aivencloud.com/api/v1/receive
+    basic_auth:
+      username: avnadmin
+      password: ${THANOS_PASSWORD}
+    queue_config:
+      capacity: 10000
+      max_samples_per_send: 5000
+      batch_send_deadline: 5s
+      max_shards: 200
+      min_shards: 1
+      max_retries: 3
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'expensive_metric_.*'
+        action: drop
+```
+
+### Grafana Data Source
+
+```yaml
+apiVersion: 1
+datasources:
+  - name: Aiven-Metrics
+    type: prometheus
+    access: proxy
+    url: https://thanos-service.aivencloud.com:443
+    basicAuth: true
+    basicAuthUser: avnadmin
+    secureJsonData:
+      basicAuthPassword: ${THANOS_PASSWORD}
+    jsonData:
+      timeInterval: 30s
+      queryTimeout: 60s
+      httpMethod: POST
+```
+
+## Limitations
+
+<Warning>
+  - **No Direct Thanos Access**: All access must go through Aiven service integrations
+  - **Cloud Availability**: Not currently available on Azure or Google Cloud Marketplace
+  - **Query Limits**: Very large time ranges may have query timeouts
+</Warning>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Metrics Retention">
+    - Configure appropriate retention in Prometheus
+    - Use external labels for multi-cluster identification
+    - Clean up unused metrics regularly
+    - Monitor ingestion rate
+  </Accordion>
+
+  <Accordion title="Query Optimization">
+    - Use appropriate time ranges
+    - Leverage downsampled data for long ranges
+    - Use recording rules for expensive queries
+    - Add filters early in queries
+  </Accordion>
+
+  <Accordion title="Cost Management">
+    - Remove unused metrics at source
+    - Use relabel configs to drop metrics
+    - Monitor storage growth
+    - Leverage downsampling
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring
+
+### Key Metrics to Track
+
+- **Ingestion Rate**: Samples per second
+- **Query Latency**: P50, P95, P99 query times
+- **Storage Usage**: Object storage consumption
+- **TSDB Blocks**: Number and size of blocks
+- **Query Cache**: Hit rate and efficiency
+
+### Integration with Grafana
+
+```bash
+# Create integration
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-metrics \
+  --dest-service my-grafana
+
+# Monitor your metrics service
+# Use pre-built Thanos dashboards in Grafana
+```
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Visualize metrics with dashboards
+  </Card>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Monitor Kafka metrics with Prometheus
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Track database metrics over time
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Store metrics in ClickHouse for analysis
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Thanos Documentation](https://thanos.io/v0.34/thanos/getting-started.md/)
+- [Prometheus Documentation](https://prometheus.io/docs/)
+- [PromQL Guide](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+
+<Note>
+  **Prometheus Compatibility**: Aiven for Metrics is fully compatible with Prometheus, allowing you to use existing exporters, queries, and tools like Grafana seamlessly.
+</Note>

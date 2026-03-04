@@ -1,0 +1,217 @@
+---
+title: Prometheus system metrics
+description: Monitor Aiven service system metrics using Prometheus, including CPU, memory, disk, and network usage.
+---
+
+Learn how to check what metrics are available for monitoring your service using Prometheus, and find out which of the available metrics are particularly worth monitoring and why.
+
+## About the Prometheus integration
+
+The Prometheus integration allows you to monitor your Aiven services and understand the resource usage. Using this integration, you can track non-service-specific system metrics that provide insights into infrastructure performance.
+
+To start using Prometheus for monitoring metrics, [configure the Prometheus integration and set up the Prometheus server](/docs/platform/howto/integrations/prometheus-metrics).
+
+## Get a list of available service metrics
+
+To discover the metrics available for your services, make an HTTP `GET` request to your Prometheus service endpoint.
+
+<Steps>
+  <Step title="Collect connection information">
+    Once your Prometheus integration is configured, collect the following details from [Aiven Console](https://console.aiven.io/):
+    
+    1. Navigate to the **Overview** page of your service
+    2. Go to the **Connection information** section
+    3. Open the **Prometheus** tab
+    4. Copy:
+       - Prometheus URL
+       - Username
+       - Password
+  </Step>
+  
+  <Step title="Request metrics snapshot">
+    Make a request to get a snapshot of your metrics:
+    
+    ```bash
+    curl -k --user USERNAME:PASSWORD PROMETHEUS_URL/metrics
+    ```
+    
+    Replace `USERNAME`, `PASSWORD`, and `PROMETHEUS_URL` with your service values.
+  </Step>
+  
+  <Step title="Review available metrics">
+    The output provides a full list of metrics available for your service.
+  </Step>
+</Steps>
+
+## Key system metrics
+
+### CPU usage metrics
+
+CPU usage metrics help determine if the CPU is constantly being maxed out.
+
+#### High-level CPU usage
+
+For a single CPU service, get an overview with:
+
+```promql
+100 - cpu_usage_idle{cpu="cpu-total"}
+```
+
+<Note>
+A process with a `nice` value larger than `0` is categorized as `cpu_usage_nice`, which is not included in `cpu_usage_user`.
+</Note>
+
+#### CPU I/O wait monitoring
+
+<Note>
+Monitor `cpu_usage_iowait{cpu="cpu-total"}` to detect I/O bottlenecks. A high value indicates that the service node is working on something I/O intensive.
+
+For example, if `cpu_usage_iowait{cpu="cpu-total"}` equals `40`, the CPU is idle waiting for disk or network I/O operations for 40% of the time.
+</Note>
+
+#### CPU metrics reference
+
+These metrics are generated from the [Telegraf CPU plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/cpu):
+
+| Metric | Description |
+|--------|-------------|
+| `cpu_usage_idle` | Percentage of time the CPU is idle |
+| `cpu_usage_system` | Percentage of time the Kernel code is consuming the CPU |
+| `cpu_usage_user` | Percentage of time the CPU is in user-space programs with `nice` ≤ 0 |
+| `cpu_usage_nice` | Percentage of time the CPU is in user-space programs with `nice` > 0 |
+| `cpu_usage_iowait` | Percentage of time the CPU is idle when the system has pending disk I/O operations |
+| `cpu_usage_steal` | Percentage of time waiting for the hypervisor to give CPU cycles to the VM |
+| `cpu_usage_irq` | Percentage of time the system is handling interrupts |
+| `cpu_usage_softirq` | Percentage of time the system is handling software interrupts |
+| `cpu_usage_guest` | Percentage of time the CPU is running for a guest OS |
+| `cpu_usage_guest_nice` | Percentage of time the CPU is running for a guest OS with low priority |
+
+### Disk usage metrics
+
+Monitoring disk usage ensures that applications or processes don't fail due to insufficient disk storage.
+
+<Note>
+Consider monitoring `disk_used_percent` and `disk_free` to prevent storage-related issues.
+</Note>
+
+#### Disk metrics reference
+
+| Metric | Description |
+|--------|-------------|
+| `disk_free` | Free space on the service disk |
+| `disk_used` | Used space on the disk (e.g., `1.0e+9` = 8,000,000,000 bytes) |
+| `disk_total` | Total space on the disk (free and used) |
+| `disk_used_percent` | Percentage of disk space used: `disk_used / disk_total * 100` (e.g., `80` = 80% usage) |
+| `disk_inodes_free` | Number of index nodes available on the service disk |
+| `disk_inodes_used` | Number of index nodes used on the service disk |
+| `disk_inodes_total` | Total number of index nodes on the service disk |
+
+### Memory usage metrics
+
+Memory consumption metrics are essential to ensure the performance of your service.
+
+<Note>
+Consider monitoring `mem_available` (in bytes) or `mem_available_percent`, as this represents the estimated amount of memory available for applications without swapping.
+</Note>
+
+#### Key memory metrics
+
+- `mem_available` - Available memory for applications (bytes)
+- `mem_available_percent` - Available memory as a percentage
+- `mem_total` - Total system memory
+- `mem_used` - Used memory
+- `mem_free` - Free memory
+- `mem_cached` - Cached memory
+- `mem_buffered` - Buffered memory
+
+### Network usage metrics
+
+Monitoring the network provides visibility of your network utilization and traffic, allowing you to act immediately in case of network issues.
+
+<Note>
+It may be worth monitoring the number of established TCP sessions available in the `netstat_tcp_established` metric.
+</Note>
+
+#### Key network metrics
+
+- `netstat_tcp_established` - Number of established TCP connections
+- `net_bytes_sent` - Bytes sent over the network
+- `net_bytes_recv` - Bytes received from the network
+- `net_packets_sent` - Packets sent over the network
+- `net_packets_recv` - Packets received from the network
+- `net_err_in` - Inbound network errors
+- `net_err_out` - Outbound network errors
+
+## Monitoring best practices
+
+### Alerting thresholds
+
+Consider setting alerts for:
+
+- **CPU usage** - Alert when `100 - cpu_usage_idle` > 80% for extended periods
+- **CPU I/O wait** - Alert when `cpu_usage_iowait` > 30% consistently
+- **Disk usage** - Alert when `disk_used_percent` > 85%
+- **Memory available** - Alert when `mem_available_percent` < 15%
+- **TCP connections** - Alert on unusual changes in `netstat_tcp_established`
+
+### Query examples
+
+<CodeGroup>
+```promql Total CPU usage
+100 - cpu_usage_idle{cpu="cpu-total"}
+```
+
+```promql I/O wait percentage
+cpu_usage_iowait{cpu="cpu-total"}
+```
+
+```promql Disk usage percentage
+disk_used_percent
+```
+
+```promql Available memory percentage
+mem_available_percent
+```
+
+```promql Established TCP connections
+netstat_tcp_established
+```
+</CodeGroup>
+
+### Visualization recommendations
+
+For effective monitoring dashboards:
+
+1. **Overview panel** - Display CPU, memory, disk, and network at a glance
+2. **CPU breakdown** - Show user, system, and I/O wait separately
+3. **Disk trends** - Plot usage over time to predict capacity needs
+4. **Memory pressure** - Track available memory and swap usage
+5. **Network traffic** - Monitor bytes sent/received and error rates
+
+## Troubleshooting
+
+### No metrics appearing
+
+- Verify the Prometheus integration is enabled on your service
+- Check credentials (username and password) are correct
+- Confirm the Prometheus URL is accessible
+- Allow a few minutes for initial metrics to populate
+
+### Incomplete metrics
+
+- Some metrics may not be available for all service types
+- Check service logs for any integration errors
+- Verify the Prometheus server is configured correctly
+
+### High cardinality warnings
+
+- Limit the number of unique label combinations
+- Use Prometheus recording rules for frequently queried metrics
+- Consider adjusting retention policies
+
+## Related resources
+
+- [Configure Prometheus integration](/docs/platform/howto/integrations/prometheus-metrics)
+- [Prometheus documentation](https://prometheus.io/docs/)
+- [Telegraf CPU plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/cpu)
+- [Service integrations overview](/integrations/overview)

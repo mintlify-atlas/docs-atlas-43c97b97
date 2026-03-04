@@ -1,80 +1,332 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Create your first Aiven service in minutes with this step-by-step guide
 ---
 
-## Get started in three steps
+This quickstart guide walks you through creating your first Aiven service. You'll set up billing, create a project, and deploy a service using the Aiven Console.
 
-Get your documentation site running locally and make your first customization.
+<Note>
+  **Time to complete:** 5-10 minutes
+  
+  **Prerequisites:** An email address to create your Aiven account
+</Note>
 
-### Step 1: Set up your local environment
+## Step 1: Sign up for Aiven
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+Create your free Aiven account to get started:
+
+<Steps>
+  <Step title="Create your account">
+    Go to [console.aiven.io/signup](https://console.aiven.io/signup) and sign up with your email address.
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Alternatively, you can sign up through a [cloud marketplace](/marketplace-setup) (AWS, Azure, or Google Cloud).
+  </Step>
+  
+  <Step title="Verify your email">
+    Check your inbox for a verification email and click the confirmation link.
+  </Step>
+  
+  <Step title="Complete your profile">
+    Enter your name and organization details when prompted.
+  </Step>
+</Steps>
 
-### Step 2: Deploy your changes
+<Tip>
+  New accounts receive free trial credits to explore Aiven services at no cost.
+</Tip>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+## Step 2: Set up billing
+
+Before creating services, you need to configure a payment method:
+
+<Steps>
+  <Step title="Navigate to billing">
+    In the Aiven Console, go to **Billing** in the left navigation menu.
+  </Step>
+  
+  <Step title="Add payment method">
+    Click **Add payment method** and enter your credit card details.
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
+    <Note>
+      You won't be charged until you exceed your free trial credits. All services are billed per hour based on actual usage.
+    </Note>
+  </Step>
+  
+  <Step title="Configure billing group">
+    Your default billing group is automatically created. You can add additional details like:
+    - Billing contact email
+    - Company information
+    - Billing address
+    - Tax ID (if applicable)
+  </Step>
+</Steps>
+
+For more details, see the [billing and payment guide](/platform/billing-and-payment).
+
+## Step 3: Create a project
+
+Projects organize your services and resources:
+
+<Steps>
+  <Step title="Access projects">
+    Click **Projects** in the left navigation, then click **Create project**.
+  </Step>
+  
+  <Step title="Name your project">
+    Enter a descriptive name like `my-first-project` or `development`.
+    
+    <Tip>
+      Use projects to separate environments (dev, staging, production) or organize services by application.
+    </Tip>
+  </Step>
+  
+  <Step title="Select billing group">
+    Choose your default billing group or create a new one.
+  </Step>
+  
+  <Step title="Create the project">
+    Click **Create project** to finish.
+  </Step>
+</Steps>
+
+## Step 4: Create your first service
+
+Let's deploy a PostgreSQL database as an example:
+
+<Steps>
+  <Step title="Start service creation">
+    From your project dashboard, click **Create service**.
+  </Step>
+  
+  <Step title="Choose a service type">
+    Select **PostgreSQL** from the list of available services.
+    
+    <Note>
+      You can choose any service type. PostgreSQL is used here as an example, but the process is similar for Kafka, MySQL, OpenSearch, and other services.
+    </Note>
+  </Step>
+  
+  <Step title="Select cloud provider and region">
+    Choose where to deploy your service:
+    - **Cloud provider:** AWS, Azure, or Google Cloud
+    - **Region:** Pick a region close to your users for better performance
+    
+    Example: `AWS - us-east-1` or `Google Cloud - europe-west1`
+  </Step>
+  
+  <Step title="Choose a service plan">
+    Select a plan based on your needs:
+    - **Hobbyist:** Single-node for development and testing
+    - **Startup:** High availability with automatic failover
+    - **Business:** Production-ready with enhanced resources
+    - **Premium:** Maximum performance and features
+    
+    <Tip>
+      Start with the **Hobbyist** plan for testing. You can upgrade to a higher plan later without downtime.
+    </Tip>
+  </Step>
+  
+  <Step title="Name your service">
+    Give your service a descriptive name like `demo-postgres` or `app-database`.
+  </Step>
+  
+  <Step title="Review and create">
+    Review your configuration and click **Create service**.
+    
+    The service will start provisioning. This typically takes 2-5 minutes.
+  </Step>
+</Steps>
+
+## Step 5: Connect to your service
+
+Once your service is running, you can connect to it:
+
+<Steps>
+  <Step title="View service details">
+    Click on your service name to open the service overview page.
+  </Step>
+  
+  <Step title="Get connection information">
+    Find your connection details in the **Connection information** section:
+    - Service URI
+    - Host and port
+    - Username and password
+    
+    <Note>
+      Keep your credentials secure. Never commit them to version control.
+    </Note>
+  </Step>
+  
+  <Step title="Connect to your database">
+    Use the connection information with your preferred client.
+  </Step>
+</Steps>
+
+### Example: Connect to PostgreSQL
+
+<Accordion title="Using psql command-line">
+  Copy the Service URI from the console and use it with psql:
+  
+  ```bash
+  psql "postgres://avnadmin:password@demo-postgres-project.aivencloud.com:12345/defaultdb?sslmode=require"
+  ```
+  
+  Replace the URI with your actual connection string from the console.
 </Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Accordion title="Using a connection string in your application">
+  Most PostgreSQL libraries accept the Service URI directly:
+  
+  ```python
+  import psycopg2
+  
+  conn = psycopg2.connect(
+      "postgres://avnadmin:password@demo-postgres-project.aivencloud.com:12345/defaultdb?sslmode=require"
+  )
+  ```
+  
+  ```javascript
+  const { Client } = require('pg');
+  
+  const client = new Client({
+    connectionString: 'postgres://avnadmin:password@demo-postgres-project.aivencloud.com:12345/defaultdb?sslmode=require'
+  });
+  
+  await client.connect();
+  ```
+</Accordion>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+## Create services with CLI or API
 
-### Step 3: Go live
+You can also create services programmatically:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
+<Accordion title="Using Aiven CLI">
+  Install the Aiven CLI:
+  
+  ```bash
+  pip install aiven-client
+  ```
+  
+  Log in to your account:
+  
+  ```bash
+  avn user login your-email@example.com --token
+  ```
+  
+  Create a service:
+  
+  ```bash
+  avn service create demo-postgres \
+    --service-type pg \
+    --cloud aws-us-east-1 \
+    --plan hobbyist \
+    --project my-first-project
+  ```
+  
+  Check service status:
+  
+  ```bash
+  avn service list --project my-first-project
+  ```
+  
+  Get connection details:
+  
+  ```bash
+  avn service get demo-postgres --project my-first-project --format json
+  ```
+  
+  For more CLI commands, see the [CLI documentation](/tools/cli).
+</Accordion>
+
+<Accordion title="Using Aiven API">
+  Create a service using the REST API:
+  
+  ```bash
+  curl -X POST https://api.aiven.io/v1/project/my-first-project/service \
+    -H "Authorization: Bearer YOUR_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "service_name": "demo-postgres",
+      "service_type": "pg",
+      "cloud": "aws-us-east-1",
+      "plan": "hobbyist"
+    }'
+  ```
+  
+  Get service information:
+  
+  ```bash
+  curl -X GET https://api.aiven.io/v1/project/my-first-project/service/demo-postgres \
+    -H "Authorization: Bearer YOUR_API_TOKEN"
+  ```
+  
+  The API returns detailed service information including connection details, status, and configuration.
+  
+  For complete API documentation, see the [API reference](/api-reference/services).
+</Accordion>
+
+<Accordion title="Using Terraform">
+  Create a service using the Aiven Terraform Provider:
+  
+  ```hcl
+  terraform {
+    required_providers {
+      aiven = {
+        source  = "aiven/aiven"
+        version = "~> 4.0"
+      }
+    }
+  }
+  
+  provider "aiven" {
+    api_token = var.aiven_api_token
+  }
+  
+  resource "aiven_pg" "demo_postgres" {
+    project      = "my-first-project"
+    service_name = "demo-postgres"
+    cloud_name   = "aws-us-east-1"
+    plan         = "hobbyist"
+  }
+  
+  output "service_uri" {
+    value     = aiven_pg.demo_postgres.service_uri
+    sensitive = true
+  }
+  ```
+  
+  Apply the configuration:
+  
+  ```bash
+  terraform init
+  terraform apply
+  ```
+  
+  For more examples, see the [Terraform documentation](/tools/terraform).
 </Accordion>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Congratulations! You've created your first Aiven service. Here's what to explore next:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Explore your service" icon="magnifying-glass" href="/services/overview">
+    Learn about service features, backups, and configuration options
+  </Card>
+  
+  <Card title="Set up your organization" icon="users" href="/platform/organizations-and-projects">
+    Invite team members and configure access controls
+  </Card>
+  
+  <Card title="Configure integrations" icon="plug" href="/platform/service-integrations">
+    Connect services together or integrate with external tools
+  </Card>
+  
+  <Card title="Secure your services" icon="lock" href="/platform/security">
+    Set up VPC peering, IP filtering, and authentication policies
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+<Tip>
+  **Need help?** Check out our documentation or contact [support@aiven.io](mailto:support@aiven.io) for assistance.
+</Tip>

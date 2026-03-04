@@ -1,0 +1,640 @@
+---
+title: Authentication and Identity
+description: Learn how to configure authentication methods, SSO, SAML identity providers, and authentication policies for your Aiven organization.
+---
+
+Aiven provides flexible authentication options for accessing your organization, from password-based login to enterprise SSO with SAML identity providers. Configure authentication policies to control how users access your resources and enforce security requirements.
+
+## Authentication methods
+
+Users can access Aiven using multiple authentication methods:
+
+<CardGroup cols={2}>
+  <Card title="Password" icon="key">
+    **Email and password**
+    
+    - Traditional username/password
+    - Optional two-factor authentication (2FA)
+    - Can be disabled organization-wide
+  </Card>
+  
+  <Card title="Third-Party" icon="globe">
+    **Social login providers**
+    
+    - Google
+    - Microsoft
+    - GitHub
+    - Can be disabled organization-wide
+  </Card>
+  
+  <Card title="SAML SSO" icon="building">
+    **Identity providers**
+    
+    - Okta, Auth0, Azure AD, Google Workspace
+    - FusionAuth, JumpCloud, OneLogin
+    - Custom SAML 2.0 providers
+    - Organization-managed
+  </Card>
+  
+  <Card title="Tokens" icon="code">
+    **API access**
+    
+    - Personal tokens for organization users
+    - Application tokens for automation
+    - Linked to authentication method
+    - Can be restricted by IP address
+  </Card>
+</CardGroup>
+
+## Authentication policies
+
+Authentication policies control how all users in your organization can access Aiven resources. Policies are set at the organization level by organization admins.
+
+### Configuring authentication policy
+
+<Steps>
+  <Step title="Navigate to policy settings">
+    Click **Admin** → **Authentication policy**
+  </Step>
+  <Step title="Select allowed methods">
+    Enable or disable authentication methods for your organization
+  </Step>
+  <Step title="Configure additional settings">
+    Set 2FA requirements, IP restrictions, token policies
+  </Step>
+  <Step title="Save changes">
+    Policy takes effect immediately for all users
+  </Step>
+</Steps>
+
+<Warning>
+Changing authentication policy can immediately prevent users from accessing the organization. Test with a single user before applying organization-wide.
+</Warning>
+
+### Password authentication
+
+<Tabs>
+  <Tab title="With 2FA Required">
+    **Strongest password security**
+    
+    When enabled:
+    - Users must set up 2FA to access organization resources
+    - Works with authenticator apps (Google Authenticator, Authy, 1Password)
+    - Does not affect SSO or identity provider logins
+    - Personal tokens continue to work
+    
+    ```bash
+    # Users enable 2FA in their profile
+    # Cannot be automated via CLI
+    ```
+    
+    <Note>
+    Users must enable 2FA through the Aiven Console in their user profile settings.
+    </Note>
+  </Tab>
+  
+  <Tab title="Without 2FA">
+    **Basic password security**
+    
+    When enabled:
+    - Users log in with email and password
+    - 2FA is optional but recommended
+    - Less secure than required 2FA
+  </Tab>
+  
+  <Tab title="Disabled">
+    **Force SSO**
+    
+    When disabled:
+    - Users cannot log in with passwords
+    - Must use identity provider or third-party login
+    - Improves security by enforcing enterprise SSO
+  </Tab>
+</Tabs>
+
+### Third-party authentication
+
+Allow or block social login providers:
+
+```yaml
+Third-party options:
+  Google: Allow users to log in with Google accounts
+  Microsoft: Allow users to log in with Microsoft accounts  
+  GitHub: Allow users to log in with GitHub accounts
+```
+
+<Note>
+Third-party authentication is convenient but doesn't provide the same level of control as enterprise identity providers. For production organizations, consider using SAML SSO instead.
+</Note>
+
+### SSO with identity providers
+
+Control whether users can access your organization through SSO:
+
+<Tabs>
+  <Tab title="Any organization's IdP">
+    **Default setting**
+    
+    - Users who belong to multiple Aiven organizations can log in using any of those organizations' identity providers
+    - More flexible for users
+    - Less secure for organizations
+  </Tab>
+  
+  <Tab title="Only your organization's IdP">
+    **Recommended for most organizations**
+    
+    - Users must log in with one of YOUR organization's identity providers
+    - Cannot use other organizations' IdPs to access your resources
+    - Stronger security and control
+    - Recommended if you only have one Aiven organization
+  </Tab>
+</Tabs>
+
+### Personal tokens
+
+Control whether organization users can create personal tokens:
+
+- **Enabled** - Users can generate tokens for API/CLI access
+- **Disabled for managed users** - Only non-managed users can create tokens (they still can't use them to access your organization)
+- **Disabled for all** - No personal tokens allowed; use application users instead
+
+<Note>
+Application users and their tokens are not affected by this setting. Application tokens always work regardless of authentication policy.
+</Note>
+
+### Token authentication method enforcement
+
+Ensure tokens conform to your authentication policy:
+
+- **Enabled** - Tokens can only be used if they were created with an allowed authentication method
+- **Disabled** - Tokens work regardless of how they were created
+
+**Example scenario:**
+```
+1. User logs in with password, creates token
+2. Authentication policy changes to only allow IdP
+3. With enforcement enabled: Token stops working
+4. User logs in with IdP, creates new token
+5. New token works with updated policy
+```
+
+### IP address restrictions
+
+Limit access to trusted networks:
+
+```bash
+# Example: Only allow access from office and VPN
+Allowed IP ranges:
+  - 203.0.113.0/24    # Office network
+  - 198.51.100.0/24   # VPN network
+```
+
+**Applies to:**
+- Aiven Console access
+- API calls
+- CLI commands
+- Personal tokens
+- Application tokens
+
+<Warning>
+Be careful when setting IP restrictions. You can lock yourself out if you don't include your current IP address.
+</Warning>
+
+## SAML identity providers
+
+Connect your organization to enterprise identity providers for single sign-on:
+
+### Supported identity providers
+
+<CardGroup cols={2}>
+  <Card title="Okta" icon="building">
+    Popular enterprise IdP with detailed [setup guide](/docs/platform/howto/saml/add-okta-idp)
+  </Card>
+  <Card title="Azure AD" icon="microsoft">
+    Microsoft's identity platform with [setup guide](/docs/platform/howto/saml/add-azure-idp)
+  </Card>
+  <Card title="Google Workspace" icon="google">
+    Google's enterprise IdP with [setup guide](/docs/platform/howto/saml/add-google-idp)
+  </Card>
+  <Card title="Auth0" icon="lock">
+    Flexible identity platform with [setup guide](/docs/platform/howto/saml/add-auth0-idp)
+  </Card>
+  <Card title="OneLogin" icon="id-card">
+    Cloud-based IdP with [setup guide](/docs/platform/howto/saml/add-onelogin-idp)
+  </Card>
+  <Card title="JumpCloud" icon="server">
+    Directory platform with [setup guide](/docs/platform/howto/saml/add-jumpcloud-idp)
+  </Card>
+  <Card title="FusionAuth" icon="shield-alt">
+    Customer identity platform with [setup guide](/docs/platform/howto/saml/add-fusionauth-idp)
+  </Card>
+  <Card title="Custom SAML" icon="cog">
+    Any SAML 2.0 compatible identity provider
+  </Card>
+</CardGroup>
+
+### Setting up an identity provider
+
+<Steps>
+  <Step title="Start IdP configuration in Aiven">
+    **Admin** → **Identity providers** → **Add identity provider**
+    
+    - Choose IdP type
+    - Enter name
+    - Note the **Metadata URL** and **ACS URL** provided by Aiven
+  </Step>
+  
+  <Step title="Configure SAML application in your IdP">
+    In your identity provider (Okta, Azure AD, etc.):
+    
+    - Create new SAML application
+    - Set **ACS URL** (Assertion Consumer Service URL)
+    - Set **Entity ID** / **Audience**
+    - Configure attribute mapping (email, first name, last name)
+    - Assign users to the application
+  </Step>
+  
+  <Step title="Complete setup in Aiven">
+    Return to Aiven Console:
+    
+    - Enter **IdP URL** from your identity provider
+    - Enter **Entity ID** from your identity provider  
+    - Upload **IdP certificate** or enter certificate content
+    - Save configuration
+  </Step>
+  
+  <Step title="Link users (if needed)">
+    Users with email addresses on verified domains are automatically linked.
+    
+    For other users:
+    - **Signup URL** - New users create Aiven account linked to IdP
+    - **Account link URL** - Existing users link their Aiven account to IdP
+  </Step>
+  
+  <Step title="Test">
+    Test the SSO flow before rolling out to all users
+  </Step>
+</Steps>
+
+### IdP configuration example (Okta)
+
+<CodeGroup>
+```yaml Aiven configuration
+Identity Provider Settings:
+  Name: "Okta SSO"
+  Type: "SAML 2.0"
+  
+Aiven provides:
+  Metadata URL: https://api.aiven.io/v1/sso/saml/metadata/abc123
+  ACS URL: https://api.aiven.io/v1/sso/saml/acs/abc123
+  
+You provide:
+  IdP URL: https://company.okta.com/app/abc123/sso/saml
+  Entity ID: http://www.okta.com/abc123
+  Certificate: (X.509 certificate from Okta)
+```
+
+```yaml Okta configuration  
+SAML Application Settings:
+  Single sign on URL: https://api.aiven.io/v1/sso/saml/acs/abc123
+  Audience URI: https://api.aiven.io/v1/sso/saml/metadata/abc123
+  Name ID format: EmailAddress
+  
+Attribute Statements:
+  email: user.email
+  firstName: user.firstName
+  lastName: user.lastName
+```
+</CodeGroup>
+
+### Domain verification for SSO
+
+Verify your email domain to automatically link users:
+
+<Steps>
+  <Step title="Add domain">
+    **Admin** → **Domains** → **Add domain** → Enter "company.com"
+  </Step>
+  <Step title="Add DNS record">
+    Add the provided TXT record to your DNS:
+    ```
+    TXT _aiven-challenge.company.com "abc123def456..."
+    ```
+  </Step>
+  <Step title="Verify">
+    Click **Verify** in Aiven Console after DNS propagates
+  </Step>
+  <Step title="Link to IdP">
+    Associate the verified domain with your identity provider
+  </Step>
+</Steps>
+
+**Benefits of verified domains:**
+- Users automatically linked to IdP when logging in
+- No need to send signup/link URLs
+- Users become managed users
+- Better visibility and control
+
+```bash
+# Verify domain via CLI
+avn organization domain-add \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Get verification TXT record
+avn organization domain-get \
+  --organization-id <ORG_ID> \
+  --domain company.com
+
+# Verify after adding DNS record  
+avn organization domain-verify \
+  --organization-id <ORG_ID> \
+  --domain company.com
+```
+
+### IdP security best practices
+
+<Steps>
+  <Step title="Enable IdP-initiated login only if needed">
+    Logging in from IdP dashboard is less secure than from Aiven Console
+  </Step>
+  <Step title="Rotate certificates regularly">
+    Update IdP certificates before expiration
+  </Step>
+  <Step title="Require authentication policy with IdP only">
+    Force all users to use SSO by disabling other authentication methods
+  </Step>
+  <Step title="Use short session durations">
+    Configure your IdP with session timeouts appropriate for your security needs
+  </Step>
+  <Step title="Enable MFA in your IdP">
+    Enforce multi-factor authentication in your identity provider
+  </Step>
+  <Step title="Monitor IdP access logs">
+    Regularly review authentication logs in both Aiven and your IdP
+  </Step>
+</Steps>
+
+## Authentication tokens
+
+Tokens provide programmatic access to the Aiven API, CLI, and Terraform Provider:
+
+### Token types
+
+<Tabs>
+  <Tab title="Session tokens">
+    **Automatic temporary tokens**
+    
+    - Created when you log in to Console or CLI
+    - Automatically revoked on logout
+    - Short-lived (hours)
+    - Cannot be manually created
+  </Tab>
+  
+  <Tab title="Personal tokens">
+    **User-created tokens**
+    
+    - Created by organization users
+    - Long-lived (days to months)
+    - Can be restricted by IP address
+    - Subject to authentication policy
+    - Linked to authentication method used when created
+  </Tab>
+  
+  <Tab title="Application tokens">
+    **Automation tokens**
+    
+    - Created for application users
+    - Long-lived (days to months)
+    - Can be restricted by IP address
+    - NOT subject to authentication policy
+    - Recommended for CI/CD and automation
+  </Tab>
+</Tabs>
+
+### Creating personal tokens
+
+<Steps>
+  <Step title="Navigate to profile">
+    Click your profile icon → **Tokens**
+  </Step>
+  <Step title="Generate token">
+    Click **Generate token**
+    
+    Configure:
+    - Description (e.g., "Laptop CLI access")
+    - Max age (session duration)
+    - Allowed IP ranges (optional but recommended)
+  </Step>
+  <Step title="Save token">
+    Copy the token immediately - it cannot be retrieved later
+  </Step>
+  <Step title="Use token">
+    ```bash
+    # Set token as environment variable
+    export AIVEN_TOKEN="your-token-here"
+    
+    # Use with CLI
+    avn project list
+    
+    # Use with API
+    curl -H "Authorization: Bearer $AIVEN_TOKEN" \
+      https://api.aiven.io/v1/project
+    ```
+  </Step>
+</Steps>
+
+```bash
+# Create token via CLI (requires existing authentication)
+avn user access-token create \
+  --description "CI/CD Pipeline" \
+  --max-age-seconds 2592000  # 30 days
+
+# List your tokens  
+avn user access-token list
+
+# Revoke token
+avn user access-token revoke <TOKEN_PREFIX>
+```
+
+### Token security best practices
+
+<Steps>
+  <Step title="Use application users for automation">
+    Never use personal tokens for CI/CD, Terraform, or monitoring - use application users
+  </Step>
+  <Step title="Set appropriate expiration">
+    - Personal tokens: 30-90 days
+    - Application tokens: 90 days, rotate regularly
+  </Step>
+  <Step title="Restrict by IP address">
+    ```bash
+    # Limit token to specific networks
+    avn organization application-user-token-create \
+      --organization-id <ORG_ID> \
+      --user-id <APP_USER_ID> \
+      --cidr-blocks "203.0.113.0/24"
+    ```
+  </Step>
+  <Step title="Use environment variables">
+    Never hardcode tokens in code or commit them to version control
+  </Step>
+  <Step title="Rotate tokens regularly">
+    Revoke and regenerate tokens every 90 days
+  </Step>
+  <Step title="Audit token usage">
+    Review active tokens monthly and revoke unused ones
+  </Step>
+  <Step title="Secure token storage">
+    Use secret managers (HashiCorp Vault, AWS Secrets Manager) for token storage
+  </Step>
+</Steps>
+
+<Warning>
+Tokens provide full access to your account. Treat them like passwords. If a token is compromised, revoke it immediately.
+</Warning>
+
+### Token authentication with authentication policies
+
+Tokens are linked to the authentication method used when they were created:
+
+```
+Scenario 1: No token enforcement
+- User logs in with password, creates token
+- Auth policy changes to "IdP only"
+- Token still works (not enforced)
+
+Scenario 2: With token enforcement  
+- User logs in with password, creates token
+- Auth policy changes to "IdP only" + token enforcement
+- Token stops working (password not allowed)
+- User logs in with IdP, creates new token
+- New token works (IdP is allowed)
+```
+
+<Note>
+Application tokens are **never** affected by authentication policies. They always work regardless of policy settings.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot log in after authentication policy change">
+    **Cause:** New policy doesn't allow your authentication method
+    
+    **Solution:**
+    1. Contact organization admin to temporarily enable your auth method
+    2. Log in using allowed method (e.g., IdP if password is disabled)
+    3. Link new authentication method to your account
+  </Accordion>
+  
+  <Accordion title="SAML authentication failed">
+    **Cause:** Misconfiguration in IdP or Aiven
+    
+    **Solution:**
+    1. Use [SAML Tracer](https://addons.mozilla.org/firefox/addon/saml-tracer/) browser extension
+    2. Verify ACS URL and Entity ID match between IdP and Aiven
+    3. Check certificate is not expired
+    4. Verify users are assigned to SAML app in IdP
+    5. Check attribute mapping (email, firstName, lastName)
+  </Accordion>
+  
+  <Accordion title="Invalid relay state error">
+    **Cause:** Attempting to log in from IdP dashboard (IdP-initiated login)
+    
+    **Solution:**
+    1. Log in from Aiven Console instead (SP-initiated login)
+    2. Or enable IdP-initiated login in Aiven Console
+    3. Or set default relay state/start URL in IdP to Aiven Console URL
+  </Accordion>
+  
+  <Accordion title="Token stopped working">
+    **Cause:** Authentication policy changed with token enforcement enabled
+    
+    **Solution:**
+    1. Log in with allowed authentication method
+    2. Create new token (will be linked to allowed method)
+    3. Update applications with new token
+  </Accordion>
+  
+  <Accordion title="IdP password doesn't work">
+    **Cause:** User account not linked to IdP
+    
+    **Solution:**
+    1. Get Account Link URL from IdP settings in Aiven Console
+    2. Follow link and log in with existing Aiven password
+    3. Authenticate with IdP to complete linking
+    4. Check linked authentication methods in profile
+  </Accordion>
+  
+  <Accordion title="Locked out of organization">
+    **Cause:** IP restriction or auth policy change
+    
+    **Solution:**
+    1. Contact another organization admin to adjust policy
+    2. If no other admins, contact Aiven support
+    3. Use VPN to access from allowed IP range
+  </Accordion>
+</AccordionGroup>
+
+## API reference
+
+<CodeGroup>
+```bash Create personal token
+curl -X POST \
+  -H "Authorization: Bearer $EXISTING_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "CLI access",
+    "max_age_seconds": 2592000
+  }' \
+  https://api.aiven.io/v1/access_token
+```
+
+```bash List identity providers
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/organization/{org_id}/identity-provider
+```
+
+```bash Update authentication policy  
+curl -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password_auth_enabled": false,
+    "saml_enabled": true,
+    "require_two_factor": false
+  }' \
+  https://api.aiven.io/v1/organization/{org_id}/authentication-policy
+```
+
+```bash Create application user token
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Terraform",
+    "max_age_seconds": 7776000,
+    "extend_when_used": true,
+    "scopes": ["authentication:read", "billing:read"]
+  }' \
+  https://api.aiven.io/v1/organization/{org_id}/application-user/{user_id}/token
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Manage users and grant appropriate access
+  </Card>
+  <Card title="Security" icon="shield" href="/platform/security">
+    Learn about Aiven's security architecture
+  </Card>
+  <Card title="Organizations" icon="building" href="/platform/organizations-and-projects">
+    Set up your organization structure
+  </Card>
+  <Card title="Monitoring & Logs" icon="chart-line" href="/platform/monitoring-and-logs">
+    Monitor authentication events and audit logs
+  </Card>
+</CardGroup>

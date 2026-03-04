@@ -1,0 +1,453 @@
+---
+title: Aiven API
+description: Use the Aiven RESTful API to programmatically manage your infrastructure and automate tasks.
+---
+
+The Aiven API provides programmatic access to the Aiven platform, allowing you to automate service management, integrate with existing systems, and build custom workflows.
+
+## Use cases
+
+The Aiven API is ideal for:
+
+<CardGroup cols={2}>
+  <Card title="CI/CD integration" icon="code-branch">
+    Create test services during CI runs and tear them down automatically
+  </Card>
+  
+  <Card title="Custom automation" icon="robot">
+    Build custom tools and scripts for your specific workflows
+  </Card>
+  
+  <Card title="Scheduled operations" icon="clock">
+    Deploy and manage development or demo environments on a schedule
+  </Card>
+  
+  <Card title="Dynamic scaling" icon="chart-line">
+    Scale disk space based on metrics or events
+  </Card>
+</CardGroup>
+
+## Getting started
+
+<Steps>
+  <Step title="Create an authentication token">
+    Generate a personal token from the [Aiven Console](https://console.aiven.io):
+    
+    1. Click your user icon and select **Tokens**
+    2. Click **Generate token**
+    3. Provide a description and click **Generate**
+    4. Copy the token immediately (it won't be shown again)
+  </Step>
+  
+  <Step title="Try the API with Postman">
+    Use the [Aiven Postman workspace](https://www.postman.com/aiven-apis/workspace/aiven/overview) to explore the API:
+    
+    1. Fork the Postman collection and environment
+    2. Add your token to the `authToken` variable in the environment
+    3. Send requests to explore the API
+  </Step>
+  
+  <Step title="Make your first API call">
+    Test authentication by listing your projects:
+    
+    ```bash
+    curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+      https://api.aiven.io/v1/project
+    ```
+  </Step>
+</Steps>
+
+## Authentication
+
+All API requests require authentication using a bearer token in the Authorization header:
+
+```bash
+Authorization: aivenv1 YOUR_TOKEN
+```
+
+<CodeGroup>
+```bash cURL
+curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+  https://api.aiven.io/v1/project
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN"
+}
+
+response = requests.get(
+    "https://api.aiven.io/v1/project",
+    headers=headers
+)
+
+print(response.json())
+```
+
+```javascript JavaScript
+const fetch = require('node-fetch');
+
+const headers = {
+  'Authorization': 'aivenv1 YOUR_TOKEN'
+};
+
+fetch('https://api.aiven.io/v1/project', { headers })
+  .then(res => res.json())
+  .then(data => console.log(data));
+```
+
+```go Go
+package main
+
+import (
+    "fmt"
+    "io/ioutil"
+    "net/http"
+)
+
+func main() {
+    client := &http.Client{}
+    req, _ := http.NewRequest("GET", "https://api.aiven.io/v1/project", nil)
+    req.Header.Add("Authorization", "aivenv1 YOUR_TOKEN")
+    
+    resp, _ := client.Do(req)
+    body, _ := ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>
+
+## Common API operations
+
+### List projects
+
+Retrieve all projects you have access to:
+
+<Tabs>
+  <Tab title="Request">
+    ```bash
+    curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+      https://api.aiven.io/v1/project
+    ```
+  </Tab>
+  
+  <Tab title="Response">
+    ```json
+    {
+      "projects": [
+        {
+          "project_name": "my-project",
+          "account_id": "a225dad8d3c4",
+          "account_name": "My Account",
+          "billing_currency": "USD",
+          "default_cloud": "google-europe-north1",
+          "estimated_balance": "4.11",
+          "payment_method": "card"
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### List cloud regions
+
+Get available cloud regions (no authentication required):
+
+<Tabs>
+  <Tab title="Request">
+    ```bash
+    curl https://api.aiven.io/v1/clouds
+    ```
+  </Tab>
+  
+  <Tab title="Response">
+    ```json
+    {
+      "clouds": [
+        {
+          "cloud_description": "Africa, South Africa - Amazon Web Services: Cape Town",
+          "cloud_name": "aws-af-south-1",
+          "geo_latitude": -33.92,
+          "geo_longitude": 18.42,
+          "geo_region": "africa"
+        },
+        {
+          "cloud_description": "Europe, Finland - Google Cloud: Finland",
+          "cloud_name": "google-europe-north1",
+          "geo_latitude": 60.17,
+          "geo_longitude": 24.94,
+          "geo_region": "europe"
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Create a service
+
+Create a new PostgreSQL service:
+
+<Tabs>
+  <Tab title="Request">
+    ```bash
+    curl -X POST \
+      -H "Authorization: aivenv1 YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "cloud": "google-europe-north1",
+        "plan": "startup-4",
+        "service_name": "my-postgres",
+        "service_type": "pg"
+      }' \
+      https://api.aiven.io/v1/project/PROJECT_NAME/service
+    ```
+  </Tab>
+  
+  <Tab title="Response">
+    ```json
+    {
+      "service": {
+        "service_name": "my-postgres",
+        "service_type": "pg",
+        "state": "REBUILDING",
+        "cloud_name": "google-europe-north1",
+        "plan": "startup-4",
+        "service_uri": "postgres://...",
+        "create_time": "2024-03-04T12:00:00Z"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Get service details
+
+Retrieve information about a specific service:
+
+<Tabs>
+  <Tab title="Request">
+    ```bash
+    curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+      https://api.aiven.io/v1/project/PROJECT_NAME/service/SERVICE_NAME
+    ```
+  </Tab>
+  
+  <Tab title="Response">
+    ```json
+    {
+      "service": {
+        "service_name": "my-postgres",
+        "service_type": "pg",
+        "state": "RUNNING",
+        "cloud_name": "google-europe-north1",
+        "plan": "startup-4",
+        "service_uri": "postgres://user:pass@host:port/db",
+        "connection_info": {
+          "pg": [
+            {
+              "host": "my-postgres-project.aivencloud.com",
+              "port": 12345,
+              "dbname": "defaultdb",
+              "user": "avnadmin"
+            }
+          ]
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Update a service
+
+Modify service configuration (e.g., scale to a different plan):
+
+<Tabs>
+  <Tab title="Request">
+    ```bash
+    curl -X PUT \
+      -H "Authorization: aivenv1 YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "plan": "business-4"
+      }' \
+      https://api.aiven.io/v1/project/PROJECT_NAME/service/SERVICE_NAME
+    ```
+  </Tab>
+  
+  <Tab title="Response">
+    ```json
+    {
+      "service": {
+        "service_name": "my-postgres",
+        "plan": "business-4",
+        "state": "REBALANCING"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Delete a service
+
+Permanently delete a service:
+
+<Warning>
+This operation is irreversible. All data will be permanently deleted.
+</Warning>
+
+```bash
+curl -X DELETE \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  https://api.aiven.io/v1/project/PROJECT_NAME/service/SERVICE_NAME
+```
+
+## API resources
+
+### Projects
+
+<ParamField path="/v1/project" type="GET">
+  List all projects
+</ParamField>
+
+<ParamField path="/v1/project/{project}" type="GET">
+  Get project details
+</ParamField>
+
+### Services
+
+<ParamField path="/v1/project/{project}/service" type="GET">
+  List services in a project
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service" type="POST">
+  Create a new service
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}" type="GET">
+  Get service details
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}" type="PUT">
+  Update service configuration
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}" type="DELETE">
+  Delete a service
+</ParamField>
+
+### Service-specific operations
+
+<ParamField path="/v1/project/{project}/service/{service}/database" type="GET/POST">
+  Manage databases (PostgreSQL, MySQL)
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}/user" type="GET/POST">
+  Manage service users
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}/topic" type="GET/POST">
+  Manage Kafka topics
+</ParamField>
+
+<ParamField path="/v1/project/{project}/service/{service}/acl" type="GET/POST">
+  Manage Kafka ACLs
+</ParamField>
+
+## Rate limiting
+
+The Aiven API implements rate limiting to ensure fair usage:
+
+- **Rate limits**: Vary by endpoint and authentication method
+- **Headers**: Check `X-RateLimit-*` headers in responses
+- **Best practices**: Implement exponential backoff for retries
+
+## Error handling
+
+The API returns standard HTTP status codes:
+
+<ResponseField name="200" type="Success">
+  Request completed successfully
+</ResponseField>
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request parameters
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Invalid or missing authentication token
+</ResponseField>
+
+<ResponseField name="403" type="Forbidden">
+  Insufficient permissions
+</ResponseField>
+
+<ResponseField name="404" type="Not Found">
+  Resource not found
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Rate limit exceeded
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error - retry with exponential backoff
+</ResponseField>
+
+Error responses include details:
+
+```json
+{
+  "errors": [
+    {
+      "message": "Service 'non-existent' does not exist",
+      "status": 404
+    }
+  ]
+}
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Token security">
+    - Store tokens in environment variables or secret managers
+    - Never commit tokens to version control
+    - Rotate tokens regularly
+    - Use separate tokens for different applications
+  </Accordion>
+  
+  <Accordion title="Error handling">
+    - Implement retry logic with exponential backoff
+    - Handle rate limiting gracefully
+    - Log errors for debugging
+    - Validate responses before processing
+  </Accordion>
+  
+  <Accordion title="Performance">
+    - Cache responses when appropriate
+    - Use pagination for large result sets
+    - Batch operations when possible
+    - Monitor API usage and limits
+  </Accordion>
+</AccordionGroup>
+
+## SDKs and libraries
+
+While the API is RESTful and language-agnostic, several community libraries are available:
+
+- **Python**: [aiven-client](https://github.com/aiven/aiven-client) (official CLI includes Python library)
+- **Go**: [aiven-go-client](https://github.com/aiven/aiven-go-client)
+- **Terraform**: [Aiven Terraform Provider](/tools/terraform)
+- **Kubernetes**: [Aiven Operator](/tools/kubernetes)
+
+## Related resources
+
+- [API Reference Documentation](https://api.aiven.io/doc/)
+- [Aiven Postman Workspace](https://www.postman.com/aiven-apis/workspace/aiven/overview)
+- [Authentication Tokens Guide](https://aiven.io/docs/platform/concepts/authentication-tokens)
+- [Aiven CLI](/tools/cli) - Built on the Aiven API

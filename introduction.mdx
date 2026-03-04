@@ -1,0 +1,150 @@
+---
+title: Welcome to Aiven
+description: AI-ready open source data platform with managed streaming and database services across major cloud providers
+---
+
+Aiven provides managed open source services for streaming and databases across major cloud providers. The Aiven Platform streamlines your operations by centralizing your cloud infrastructure, security, and observability in one unified control plane.
+
+## What is Aiven?
+
+Aiven is an AI-ready data platform that lets you focus on your applications while we manage your data infrastructure. Whether you need streaming, databases, or analytics, Aiven provides fully managed services backed by open source technologies.
+
+<CardGroup cols={2}>
+  <Card title="Managed Services" icon="server">
+    Deploy Kafka, PostgreSQL, MySQL, OpenSearch, ClickHouse, Flink, and more with a few clicks
+  </Card>
+  <Card title="Multi-Cloud" icon="cloud">
+    Run your services on AWS, Azure, or Google Cloud from a single control plane
+  </Card>
+  <Card title="Open Source" icon="code">
+    Built on trusted open source technologies with no vendor lock-in
+  </Card>
+  <Card title="Production-Ready" icon="shield">
+    Enterprise-grade security, automated backups, and 24/7 monitoring included
+  </Card>
+</CardGroup>
+
+## Access the platform
+
+You can interact with the Aiven Platform through multiple interfaces:
+
+<CardGroup cols={2}>
+  <Card title="Aiven Console" icon="browser" href="/tools/console">
+    Web-based interface for managing your services and organization
+  </Card>
+  <Card title="Aiven API" icon="code" href="/tools/api">
+    RESTful API for programmatic access to all platform features
+  </Card>
+  <Card title="Aiven CLI" icon="terminal" href="/tools/cli">
+    Command-line tool for scripting and automation
+  </Card>
+  <Card title="Infrastructure as Code" icon="file-code">
+    Terraform Provider and Kubernetes Operator for DevOps workflows
+  </Card>
+</CardGroup>
+
+## Available services
+
+Aiven offers a comprehensive suite of managed data services:
+
+### Streaming & messaging
+- **Apache Kafka** - Distributed event streaming platform
+- **Apache Flink** - Stream processing framework
+
+### Databases
+- **PostgreSQL** - Advanced relational database
+- **MySQL** - Popular relational database
+- **Valkey** - In-memory data store
+- **Dragonfly** - Modern in-memory datastore
+
+### Search & analytics
+- **OpenSearch** - Search and analytics engine
+- **ClickHouse** - Real-time analytics database
+
+### Observability
+- **Grafana** - Visualization and monitoring platform
+- **M3** - Distributed metrics platform
+
+<Note>
+  All services include automated backups, high availability, security features, and monitoring out of the box.
+</Note>
+
+## Key features
+
+<Accordion title="Unified control plane">
+  Manage all your data services across multiple cloud providers from a single interface. No need to learn different tools for each cloud provider or service type.
+</Accordion>
+
+<Accordion title="Enterprise security">
+  Built-in security features including VPC peering, encryption at rest and in transit, IP filtering, and integration with your identity provider through SAML/SCIM.
+</Accordion>
+
+<Accordion title="Automated operations">
+  Automated backups, maintenance windows, version upgrades, and scaling. Focus on your applications while Aiven handles the infrastructure.
+</Accordion>
+
+<Accordion title="Service integrations">
+  Connect your services together with built-in integrations. Send Kafka logs to OpenSearch, replicate PostgreSQL data, or integrate with external monitoring tools.
+</Accordion>
+
+## Organizations and projects
+
+Aiven uses a hierarchical structure to organize your resources:
+
+```
+Organization
+├── Organizational Unit (optional)
+│   ├── Project A
+│   │   ├── Service 1
+│   │   └── Service 2
+│   └── Project B
+└── Project C
+    └── Service 3
+```
+
+- **Organizations** - Top-level entity for your company
+- **Organizational Units** - Optional grouping for departments or teams
+- **Projects** - Containers for related services and resources
+- **Services** - Individual database or streaming instances
+
+<Tip>
+  Use projects to separate environments (dev, staging, production) or to organize services by application or team.
+</Tip>
+
+## Pricing and billing
+
+Aiven uses transparent, usage-based pricing:
+
+- Pay only for what you use with per-hour billing
+- No hidden fees or surprise charges
+- Different plans available based on your service size and cloud region
+- Free trial credits available for new users
+
+<CardGroup cols={3}>
+  <Card title="Sign up for free" icon="rocket" href="https://console.aiven.io/signup">
+    Start with free trial credits
+  </Card>
+  <Card title="Marketplace signup" icon="store" href="/marketplace-setup">
+    Subscribe through AWS, Azure, or GCP
+  </Card>
+  <Card title="View pricing" icon="dollar-sign" href="https://aiven.io/pricing">
+    See pricing for all services
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<Steps>
+  <Step title="Create your first service">
+    Follow the [quickstart guide](/quickstart) to deploy your first Aiven service in minutes
+  </Step>
+  <Step title="Set up your organization">
+    Learn about [organizations and projects](/platform/organizations-and-projects) to structure your resources
+  </Step>
+  <Step title="Explore integrations">
+    Connect your services together with [service integrations](/platform/service-integrations)
+  </Step>
+  <Step title="Choose your tools">
+    Pick your preferred way to interact with Aiven: [Console](/tools/console), [CLI](/tools/cli), [API](/tools/api), or [Terraform](/tools/terraform)
+  </Step>
+</Steps>

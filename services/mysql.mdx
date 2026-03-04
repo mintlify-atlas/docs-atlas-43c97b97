@@ -1,0 +1,691 @@
+---
+title: Aiven for MySQL
+description: Fully managed MySQL relational database service deployable in the cloud of your choice with automated operations and high availability.
+---
+
+Aiven for MySQL is a fully managed relational database service that provides a reliable, scalable MySQL platform for your applications. Available from single-node starter plans to highly available production clusters with automated backups and monitoring.
+
+## Overview
+
+MySQL has been a cornerstone of the open-source database landscape for decades, powering millions of applications worldwide. Aiven for MySQL provides the reliability and features you expect from MySQL, with the added benefits of fully managed operations, automated backups, and enterprise-grade security.
+
+### Why Choose Aiven for MySQL
+
+<CardGroup cols={2}>
+  <Card title="Fully Managed" icon="gears">
+    Automated backups, updates, monitoring, and maintenance with zero downtime
+  </Card>
+  <Card title="High Availability" icon="shield-check">
+    Multi-node replication with automatic failover for business continuity
+  </Card>
+  <Card title="MyHoard Backups" icon="database">
+    Aiven's open-source backup and restore tool for MySQL with point-in-time recovery
+  </Card>
+  <Card title="Remote Replicas" icon="copy">
+    Create read replicas across regions for disaster recovery and read scaling
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="High Availability Configuration">
+    Aiven for MySQL provides automatic replication and failover:
+
+    **Single-Node Plans (Hobbyist/Startup):**
+    - Development and testing
+    - Cost-effective for non-critical workloads
+    - Automatic backups and restore
+
+    **Multi-Node Plans (Business/Premium):**
+    - Primary-replica replication
+    - Automatic failover on primary failure
+    - Read replicas for scaling reads
+    - Synchronous replication options
+  </Accordion>
+
+  <Accordion title="MyHoard Backup System">
+    Aiven's open-source backup solution for MySQL:
+
+    - Continuous binary log streaming
+    - Point-in-time recovery (PITR)
+    - Encrypted backups in object storage
+    - Fast restoration from backups
+    - Cross-region backup storage
+
+    **Backup Retention:**
+    - Hobbyist/Startup: 2 days
+    - Business: 14 days
+    - Premium: 30 days
+  </Accordion>
+
+  <Accordion title="Remote Read Replicas">
+    Create read replicas in different regions:
+
+    - Reduce read latency for global users
+    - Disaster recovery standby
+    - Cross-region data distribution
+    - Promote replica to primary if needed
+
+    ```bash
+    avn service create my-mysql-replica \
+      --service-type mysql \
+      --cloud aws-eu-west-1 \
+      --plan business-4 \
+      --replica-of my-mysql-primary
+    ```
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    Automatic tuning based on workload:
+
+    - InnoDB buffer pool sizing
+    - Connection pool management
+    - Query cache configuration
+    - Slow query logging
+    - Performance schema enabled
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create MySQL Service">
+    Deploy a MySQL service using Aiven Console, CLI, or API:
+
+    ```bash
+    avn service create my-mysql \
+      --service-type mysql \
+      --cloud aws-us-east-1 \
+      --plan business-4 \
+      --mysql-version 8.0
+    ```
+
+    **Available MySQL Versions:** 8.0 (recommended)
+  </Step>
+
+  <Step title="Create Database and Tables">
+    Connect and create your database schema:
+
+    ```bash
+    mysql -h mysql-service.aivencloud.com \
+      -P 12345 \
+      -u avnadmin \
+      -p \
+      --ssl-mode=REQUIRED
+    ```
+
+    ```sql
+    CREATE DATABASE myapp;
+    USE myapp;
+
+    CREATE TABLE users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_email (email)
+    );
+    ```
+  </Step>
+
+  <Step title="Configure Application">
+    Use connection details from service overview to connect your application with SSL enabled.
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pymysql
+    import ssl
+
+    # Create SSL context
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_REQUIRED
+    ssl_context.load_verify_locations('ca.pem')
+
+    # Connect to MySQL
+    connection = pymysql.connect(
+        host='mysql-service.aivencloud.com',
+        port=12345,
+        user='avnadmin',
+        password='your-password',
+        database='defaultdb',
+        ssl=ssl_context
+    )
+
+    try:
+        with connection.cursor() as cursor:
+            # Create table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    completed BOOLEAN DEFAULT FALSE
+                )
+            """)
+            
+            # Insert data
+            cursor.execute(
+                "INSERT INTO tasks (title) VALUES (%s), (%s)",
+                ('Task 1', 'Task 2')
+            )
+            connection.commit()
+            
+            # Query data
+            cursor.execute("SELECT * FROM tasks")
+            results = cursor.fetchall()
+            for row in results:
+                print(row)
+    finally:
+        connection.close()
+    ```
+
+    **Using SQLAlchemy:**
+    ```python
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(
+        'mysql+pymysql://avnadmin:password@mysql-service.aivencloud.com:12345/defaultdb?ssl_ca=ca.pem'
+    )
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT * FROM tasks"))
+        for row in result:
+            print(row)
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const mysql = require('mysql2/promise');
+    const fs = require('fs');
+
+    async function main() {
+      const connection = await mysql.createConnection({
+        host: 'mysql-service.aivencloud.com',
+        port: 12345,
+        user: 'avnadmin',
+        password: 'your-password',
+        database: 'defaultdb',
+        ssl: {
+          ca: fs.readFileSync('./ca.pem')
+        }
+      });
+
+      // Insert data
+      await connection.execute(
+        'INSERT INTO users (email, name) VALUES (?, ?)',
+        ['user@example.com', 'John Doe']
+      );
+
+      // Query data
+      const [rows] = await connection.execute(
+        'SELECT * FROM users WHERE email = ?',
+        ['user@example.com']
+      );
+      
+      console.log(rows);
+      await connection.end();
+    }
+
+    main().catch(console.error);
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import java.sql.*;
+
+    public class MySQLExample {
+        public static void main(String[] args) {
+            String url = "jdbc:mysql://mysql-service.aivencloud.com:12345/defaultdb" +
+                        "?sslMode=VERIFY_CA" +
+                        "&trustCertificateKeyStoreUrl=file:./ca.pem";
+            String user = "avnadmin";
+            String password = "your-password";
+
+            try (Connection conn = DriverManager.getConnection(url, user, password)) {
+                // Create table
+                Statement stmt = conn.createStatement();
+                stmt.execute(
+                    "CREATE TABLE IF NOT EXISTS products (" +
+                    "id INT AUTO_INCREMENT PRIMARY KEY," +
+                    "name VARCHAR(255)," +
+                    "price DECIMAL(10,2))" 
+                );
+
+                // Insert data
+                PreparedStatement pstmt = conn.prepareStatement(
+                    "INSERT INTO products (name, price) VALUES (?, ?)"
+                );
+                pstmt.setString(1, "Widget");
+                pstmt.setBigDecimal(2, new BigDecimal("19.99"));
+                pstmt.executeUpdate();
+
+                // Query data
+                ResultSet rs = stmt.executeQuery("SELECT * FROM products");
+                while (rs.next()) {
+                    System.out.println(rs.getString("name") + ": $" + rs.getBigDecimal("price"));
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="PHP">
+    ```php
+    <?php
+    $host = 'mysql-service.aivencloud.com';
+    $port = 12345;
+    $dbname = 'defaultdb';
+    $user = 'avnadmin';
+    $password = 'your-password';
+
+    // Create connection
+    $mysqli = new mysqli($host, $user, $password, $dbname, $port);
+
+    // Configure SSL
+    $mysqli->ssl_set(NULL, NULL, './ca.pem', NULL, NULL);
+
+    if ($mysqli->connect_error) {
+        die('Connection failed: ' . $mysqli->connect_error);
+    }
+
+    // Insert data
+    $stmt = $mysqli->prepare("INSERT INTO users (email, name) VALUES (?, ?)");
+    $stmt->bind_param("ss", $email, $name);
+    $email = 'user@example.com';
+    $name = 'John Doe';
+    $stmt->execute();
+
+    // Query data
+    $result = $mysqli->query("SELECT * FROM users");
+    while ($row = $result->fetch_assoc()) {
+        echo $row['name'] . ' - ' . $row['email'] . "\n";
+    }
+
+    $mysqli->close();
+    ?>
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        "database/sql"
+        "fmt"
+        "log"
+        _ "github.com/go-sql-driver/mysql"
+    )
+
+    func main() {
+        dsn := "avnadmin:password@tcp(mysql-service.aivencloud.com:12345)/defaultdb?tls=true"
+        db, err := sql.Open("mysql", dsn)
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer db.Close()
+
+        // Insert data
+        _, err = db.Exec(
+            "INSERT INTO users (email, name) VALUES (?, ?)",
+            "user@example.com", "John Doe",
+        )
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        // Query data
+        rows, err := db.Query("SELECT id, email, name FROM users")
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer rows.Close()
+
+        for rows.Next() {
+            var id int
+            var email, name string
+            if err := rows.Scan(&id, &email, &name); err != nil {
+                log.Fatal(err)
+            }
+            fmt.Printf("%d: %s (%s)\n", id, name, email)
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Tuning
+
+<AccordionGroup>
+  <Accordion title="Connection Management">
+    Optimize connection handling:
+
+    - Use connection pooling in your application
+    - Set appropriate `max_connections` for your workload
+    - Monitor active connections: `SHOW PROCESSLIST`
+    - Configure `wait_timeout` and `interactive_timeout`
+
+    ```sql
+    -- Check current connection count
+    SHOW STATUS LIKE 'Threads_connected';
+
+    -- View max connections setting
+    SHOW VARIABLES LIKE 'max_connections';
+    ```
+  </Accordion>
+
+  <Accordion title="Indexing Best Practices">
+    Create effective indexes:
+
+    ```sql
+    -- Add index for frequently queried columns
+    CREATE INDEX idx_user_email ON users(email);
+
+    -- Composite index for multi-column queries
+    CREATE INDEX idx_user_status_created ON users(status, created_at);
+
+    -- Full-text search index
+    CREATE FULLTEXT INDEX idx_content ON articles(title, content);
+
+    -- Check index usage
+    SHOW INDEX FROM users;
+    ```
+  </Accordion>
+
+  <Accordion title="Query Optimization">
+    Identify and optimize slow queries:
+
+    ```sql
+    -- Enable slow query log
+    SET GLOBAL slow_query_log = 'ON';
+    SET GLOBAL long_query_time = 1;
+
+    -- Analyze query performance
+    EXPLAIN SELECT * FROM users WHERE email LIKE '%@example.com';
+
+    -- View slow queries
+    SELECT * FROM mysql.slow_log ORDER BY query_time DESC LIMIT 10;
+    ```
+  </Accordion>
+
+  <Accordion title="Memory Configuration">
+    MySQL automatically tunes memory based on your plan:
+
+    - InnoDB buffer pool (largest memory consumer)
+    - Query cache (for repeated queries)
+    - Sort buffer and join buffer
+    - Connection buffers
+
+    ```sql
+    -- Check buffer pool usage
+    SHOW STATUS LIKE 'Innodb_buffer_pool%';
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## High Availability and Replication
+
+<Tabs>
+  <Tab title="Automatic Failover">
+    Business and Premium plans include automatic failover:
+
+    - Primary node handles all writes
+    - Replica nodes synchronize continuously
+    - Automatic promotion on primary failure
+    - Service URI remains constant
+    - Typical failover time: 1-2 minutes
+
+    **Monitoring Replication:**
+    ```sql
+    SHOW REPLICA STATUS\G
+    ```
+  </Tab>
+
+  <Tab title="Read Replicas">
+    Scale read operations with replicas:
+
+    - Create replicas in same or different regions
+    - Offload reporting queries to replicas
+    - Reduce latency with geographic distribution
+    - Promote replica to primary if needed
+
+    **Create Replica:**
+    ```bash
+    avn service create my-mysql-replica \
+      --service-type mysql \
+      --cloud aws-eu-west-1 \
+      --plan business-4 \
+      --replica-of my-mysql-primary
+    ```
+  </Tab>
+
+  <Tab title="Disaster Recovery">
+    Protect against regional failures:
+
+    - Cross-region read replicas
+    - Automatic backups to object storage
+    - Point-in-time recovery
+    - Service forking for testing
+
+    **Restore from Backup:**
+    ```bash
+    avn service update my-mysql \
+      --restore-backup backup-id
+    ```
+  </Tab>
+</Tabs>
+
+## Monitoring and Troubleshooting
+
+### Key Metrics to Monitor
+
+<CardGroup cols={2}>
+  <Card title="Connection Metrics" icon="link">
+    - Active connections
+    - Connection errors
+    - Max connections reached
+    - Aborted connections
+  </Card>
+
+  <Card title="Query Performance" icon="gauge">
+    - Queries per second
+    - Slow query count
+    - Average query time
+    - Query cache hit rate
+  </Card>
+
+  <Card title="Replication" icon="copy">
+    - Replication lag
+    - Replica IO/SQL thread status
+    - Binary log position
+    - Replica errors
+  </Card>
+
+  <Card title="Resource Usage" icon="server">
+    - CPU utilization
+    - Memory usage
+    - Disk I/O
+    - Disk space available
+  </Card>
+</CardGroup>
+
+### Troubleshooting Common Issues
+
+<AccordionGroup>
+  <Accordion title="Too Many Connections">
+    ```sql
+    -- Check current connections
+    SELECT COUNT(*) FROM information_schema.PROCESSLIST;
+
+    -- Kill idle connections
+    SELECT CONCAT('KILL ', id, ';') 
+    FROM information_schema.PROCESSLIST 
+    WHERE command = 'Sleep' 
+    AND time > 300;
+    ```
+  </Accordion>
+
+  <Accordion title="Slow Queries">
+    ```sql
+    -- Find queries without indexes
+    SELECT * FROM sys.statements_with_full_table_scans;
+
+    -- Identify missing indexes
+    SELECT * FROM sys.schema_unused_indexes;
+    ```
+  </Accordion>
+
+  <Accordion title="Replication Lag">
+    ```sql
+    -- Check replication status
+    SHOW REPLICA STATUS\G
+
+    -- Monitor seconds behind master
+    SELECT Seconds_Behind_Master 
+    FROM performance_schema.replication_connection_status;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="User Management">
+    Create users with appropriate privileges:
+
+    ```sql
+    -- Create application user
+    CREATE USER 'app_user'@'%' IDENTIFIED BY 'strong_password';
+
+    -- Grant specific privileges
+    GRANT SELECT, INSERT, UPDATE, DELETE ON myapp.* TO 'app_user'@'%';
+
+    -- Create read-only user
+    CREATE USER 'readonly'@'%' IDENTIFIED BY 'strong_password';
+    GRANT SELECT ON myapp.* TO 'readonly'@'%';
+
+    -- Apply changes
+    FLUSH PRIVILEGES;
+    ```
+  </Accordion>
+
+  <Accordion title="SSL/TLS Connections">
+    Always use encrypted connections:
+
+    - Aiven requires SSL by default
+    - Download CA certificate from console
+    - Configure clients with `--ssl-mode=REQUIRED`
+    - Verify server certificate
+  </Accordion>
+
+  <Accordion title="Network Security">
+    - Enable VPC peering for private access
+    - Use IP allowlisting to restrict access
+    - Configure AWS PrivateLink
+    - Implement application-level encryption for sensitive data
+  </Accordion>
+</AccordionGroup>
+
+## Migration to Aiven
+
+<Steps>
+  <Step title="Prepare Source Database">
+    - Ensure MySQL version compatibility (5.7 or 8.0)
+    - Note custom configurations
+    - Plan maintenance window
+  </Step>
+
+  <Step title="Export Data">
+    ```bash
+    mysqldump -h source-host \
+      -u root \
+      -p \
+      --single-transaction \
+      --routines \
+      --triggers \
+      --all-databases > backup.sql
+    ```
+  </Step>
+
+  <Step title="Import to Aiven">
+    ```bash
+    mysql -h mysql-service.aivencloud.com \
+      -P 12345 \
+      -u avnadmin \
+      -p \
+      --ssl-mode=REQUIRED \
+      < backup.sql
+    ```
+  </Step>
+
+  <Step title="Verify and Test">
+    - Compare row counts
+    - Test application connectivity
+    - Verify all tables and indexes
+    - Check stored procedures and triggers
+  </Step>
+</Steps>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Web Applications">
+    - E-commerce platforms
+    - Content management systems
+    - Blog platforms (WordPress, Drupal)
+    - User authentication systems
+  </Tab>
+
+  <Tab title="SaaS Applications">
+    - Multi-tenant applications
+    - Customer data management
+    - Subscription billing systems
+    - Analytics and reporting
+  </Tab>
+
+  <Tab title="Mobile Backends">
+    - User profiles and preferences
+    - Push notification management
+    - In-app purchase tracking
+    - Session management
+  </Tab>
+</Tabs>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Stream database changes with Debezium CDC
+  </Card>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Visualize MySQL metrics and data
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Replicate to ClickHouse for analytics
+  </Card>
+  <Card title="Apache Flink" icon="wave-pulse" href="/services/flink">
+    Real-time processing with MySQL connector
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [MySQL Documentation](https://dev.mysql.com/doc/)
+- [MyHoard on GitHub](https://github.com/aiven/myhoard)
+- [Aiven for MySQL Blog](https://aiven.io/blog/introducing-myhoard-your-single-solution-to-mysql-backups-and-restoration)
+
+<Note>
+  **Primary Keys Required**: Aiven for MySQL requires primary keys on all tables for replication. Learn how to [create missing primary keys](/docs/products/mysql/howto/create-missing-primary-keys).
+</Note>

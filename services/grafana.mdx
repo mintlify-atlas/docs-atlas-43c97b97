@@ -1,0 +1,482 @@
+---
+title: Aiven for Grafana
+description: Fully managed analytics and monitoring solution with customizable dashboards for visualizing metrics, logs, and time-series data.
+---
+
+Aiven for Grafana is a fully managed analytics and monitoring solution that brings unlimited scalability and high availability to your observability stack. Create powerful dashboards and visualizations for metrics, logs, and time-series data from multiple sources.
+
+## Overview
+
+Grafana is the leading open-source platform for monitoring and observability. Aiven for Grafana provides a production-ready service with seamless integration to Aiven's data infrastructure, pre-built dashboards, and over 60 advanced plugins.
+
+### Why Choose Aiven for Grafana
+
+<CardGroup cols={2}>
+  <Card title="Unified Observability" icon="chart-line">
+    Visualize metrics, logs, and traces from multiple data sources in one platform
+  </Card>
+  <Card title="Pre-Built Dashboards" icon="gauge">
+    Monitor Aiven services with ready-made dashboards out of the box
+  </Card>
+  <Card title="60+ Plugins" icon="puzzle-piece">
+    Access advanced visualization and data source plugins for customization
+  </Card>
+  <Card title="Quick Deployment" icon="rocket">
+    Production-ready Grafana clusters available in 10 minutes
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Multiple Data Sources">
+    Connect to various data sources:
+
+    - **Aiven Services**: PostgreSQL, MySQL, OpenSearch, ClickHouse, Metrics (Prometheus)
+    - **Time-Series**: Prometheus, InfluxDB, Graphite
+    - **Logs**: Loki, OpenSearch, Elasticsearch
+    - **Databases**: PostgreSQL, MySQL, MSSQL
+    - **Cloud**: CloudWatch, Azure Monitor, Google Cloud Monitoring
+    - **Tracing**: Jaeger, Tempo, Zipkin
+  </Accordion>
+
+  <Accordion title="Dashboard Builder">
+    Create custom dashboards:
+
+    - Drag-and-drop panel editor
+    - Multiple visualization types
+    - Template variables
+    - Dashboard playlists
+    - Snapshot sharing
+    - Version control
+    - Dashboard folders
+  </Accordion>
+
+  <Accordion title="Visualization Types">
+    Rich visualization library:
+
+    - Time-series graphs
+    - Bar charts and histograms
+    - Heatmaps
+    - Stat panels and gauges
+    - Tables and logs
+    - Geo maps
+    - Node graphs
+    - Canvas (custom visualizations)
+  </Accordion>
+
+  <Accordion title="Alerting">
+    Proactive monitoring:
+
+    - Multi-dimensional alerting
+    - Multiple notification channels
+    - Alert rules and folders
+    - Silences and mute timings
+    - Alert history
+    - Notification policies
+  </Accordion>
+
+  <Accordion title="User Management">
+    Team collaboration:
+
+    - Role-based access control
+    - Teams and organizations
+    - Dashboard permissions
+    - Anonymous access
+    - SSO integration
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Grafana Service">
+    Deploy a Grafana service:
+
+    ```bash
+    avn service create my-grafana \
+      --service-type grafana \
+      --cloud aws-us-east-1 \
+      --plan startup-4
+    ```
+  </Step>
+
+  <Step title="Access Grafana UI">
+    Get the Grafana URL and credentials:
+
+    ```bash
+    avn service get my-grafana --format '{service_uri}'
+    ```
+
+    Login with username `avnadmin` and the password from service credentials.
+  </Step>
+
+  <Step title="Add Data Sources">
+    Integrate Aiven services automatically:
+
+    ```bash
+    # Connect to Aiven for Metrics (Prometheus)
+    avn service integration-create \
+      --integration-type metrics \
+      --source-service my-kafka \
+      --dest-service my-grafana
+
+    # Connect to PostgreSQL
+    avn service integration-create \
+      --integration-type grafana \
+      --source-service my-postgresql \
+      --dest-service my-grafana
+    ```
+  </Step>
+
+  <Step title="Create Your First Dashboard">
+    1. Click + → Dashboard
+    2. Add visualization
+    3. Select data source
+    4. Configure query
+    5. Customize visualization
+    6. Save dashboard
+  </Step>
+</Steps>
+
+## Dashboard Examples
+
+<Tabs>
+  <Tab title="Service Metrics">
+    Monitor Aiven service health:
+
+    ```sql
+    -- Kafka throughput
+    SELECT
+      $__timeGroupAlias(time, $__interval),
+      sum(messages_in_per_sec) AS "Messages In/Sec"
+    FROM kafka_metrics
+    WHERE $__timeFilter(time)
+    GROUP BY 1
+    ORDER BY 1
+
+    -- PostgreSQL connections
+    SELECT
+      time,
+      active_connections,
+      idle_connections,
+      total_connections
+    FROM pg_metrics
+    WHERE $__timeFilter(time)
+
+    -- OpenSearch query rate
+    rate(opensearch_search_total[5m])
+    ```
+  </Tab>
+
+  <Tab title="Application Metrics">
+    Visualize application performance:
+
+    ```promql
+    # Request rate
+    rate(http_requests_total[5m])
+
+    # Response time percentiles
+    histogram_quantile(0.95, 
+      rate(http_request_duration_seconds_bucket[5m])
+    )
+
+    # Error rate
+    rate(http_requests_total{status=~"5.."}[5m])
+    / rate(http_requests_total[5m])
+
+    # CPU usage
+    100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+    ```
+  </Tab>
+
+  <Tab title="Business Metrics">
+    Track business KPIs:
+
+    ```sql
+    -- Daily revenue
+    SELECT
+      DATE(order_time) as date,
+      SUM(order_total) as revenue
+    FROM orders
+    WHERE $__timeFilter(order_time)
+    GROUP BY date
+    ORDER BY date
+
+    -- Active users
+    SELECT
+      $__timeGroupAlias(login_time, 1h),
+      COUNT(DISTINCT user_id) as active_users
+    FROM user_sessions
+    WHERE $__timeFilter(login_time)
+    GROUP BY 1
+
+    -- Conversion rate
+    SELECT
+      date,
+      (purchases::float / visitors) * 100 as conversion_rate
+    FROM daily_stats
+    WHERE $__timeFilter(date)
+    ```
+  </Tab>
+
+  <Tab title="Log Analysis">
+    Query and visualize logs:
+
+    ```json
+    // OpenSearch query for errors
+    {
+      "query": {
+        "bool": {
+          "must": [
+            {"match": {"level": "error"}},
+            {"range": {"@timestamp": {"gte": "$__from", "lte": "$__to"}}}
+          ]
+        }
+      },
+      "aggs": {
+        "errors_over_time": {
+          "date_histogram": {
+            "field": "@timestamp",
+            "interval": "$__interval"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Dashboard Best Practices
+
+<AccordionGroup>
+  <Accordion title="Dashboard Design">
+    - Use consistent color schemes
+    - Group related panels
+    - Add panel descriptions
+    - Use template variables for flexibility
+    - Keep dashboards focused on specific areas
+    - Name dashboards descriptively
+  </Accordion>
+
+  <Accordion title="Query Optimization">
+    - Use time ranges appropriately
+    - Limit data points with `$__interval`
+    - Cache queries when possible
+    - Use query variables
+    - Avoid wildcard queries
+    - Pre-aggregate data when needed
+  </Accordion>
+
+  <Accordion title="Alert Configuration">
+    - Set meaningful thresholds
+    - Avoid alert fatigue
+    - Use alert labels
+    - Configure notification channels
+    - Test alerts before deploying
+    - Document alert meanings
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Features
+
+### Template Variables
+
+<Accordion title="Dynamic Dashboards">
+  ```sql
+  -- Define variable query
+  SELECT DISTINCT service_name FROM metrics
+
+  -- Use in queries
+  SELECT
+    time,
+    value
+  FROM metrics
+  WHERE service_name = '$service'
+    AND $__timeFilter(time)
+  ```
+
+  Create dropdowns to filter dashboards by:
+  - Service name
+  - Environment
+  - Region
+  - Time range
+</Accordion>
+
+### Alerting
+
+<Accordion title="Set Up Alerts">
+  1. **Create Alert Rule:**
+     - Define query and condition
+     - Set evaluation interval
+     - Configure thresholds
+
+  2. **Configure Notification Channels:**
+     - Email
+     - Slack
+     - PagerDuty
+     - Webhook
+     - Microsoft Teams
+
+  3. **Example Alert:**
+     ```yaml
+     Alert: High CPU Usage
+     Condition: avg(cpu_usage) > 80
+     For: 5m
+     Labels:
+       severity: warning
+       team: infrastructure
+     Annotations:
+       summary: "CPU usage above 80% for 5 minutes"
+     ```
+</Accordion>
+
+### Dashboard Sharing
+
+<Accordion title="Share Dashboards">
+  - **Snapshot**: Create point-in-time dashboard view
+  - **Link**: Share dashboard URL
+  - **Export**: Download dashboard JSON
+  - **Embed**: Iframe embedding
+  - **PDF**: Scheduled PDF reports
+  - **Playlist**: Auto-rotating dashboards
+</Accordion>
+
+## Pre-Built Dashboards
+
+Aiven provides ready-to-use dashboards for monitoring Aiven services:
+
+<CardGroup cols={2}>
+  <Card title="Kafka Monitoring" icon="stream">
+    - Broker metrics
+    - Topic throughput
+    - Consumer lag
+    - Partition distribution
+  </Card>
+
+  <Card title="PostgreSQL Monitoring" icon="database">
+    - Connection stats
+    - Query performance
+    - Replication lag
+    - Table sizes
+  </Card>
+
+  <Card title="OpenSearch Monitoring" icon="magnifying-glass">
+    - Cluster health
+    - Query rate
+    - Indexing rate
+    - Shard allocation
+  </Card>
+
+  <Card title="ClickHouse Monitoring" icon="chart-column">
+    - Query performance
+    - Insert rate
+    - Memory usage
+    - Table metrics
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Infrastructure Monitoring">
+    - Server metrics (CPU, memory, disk)
+    - Network monitoring
+    - Container metrics (Docker, Kubernetes)
+    - Cloud resource monitoring
+    - Database performance
+  </Tab>
+
+  <Tab title="Application Monitoring">
+    - API performance
+    - Error rates
+    - User activity
+    - Business metrics
+    - SLA tracking
+  </Tab>
+
+  <Tab title="DevOps Dashboards">
+    - CI/CD pipeline metrics
+    - Deployment tracking
+    - Incident management
+    - On-call dashboards
+    - Capacity planning
+  </Tab>
+
+  <Tab title="Business Intelligence">
+    - KPI tracking
+    - Revenue metrics
+    - User engagement
+    - Product analytics
+    - Executive dashboards
+  </Tab>
+</Tabs>
+
+## Integration with Aiven Services
+
+```bash
+# PostgreSQL data source
+avn service integration-create \
+  --integration-type grafana \
+  --source-service my-postgresql \
+  --dest-service my-grafana
+
+# Metrics (Prometheus)
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-kafka \
+  --dest-service my-grafana
+
+# OpenSearch for logs
+avn service integration-create \
+  --integration-type grafana \
+  --source-service my-opensearch \
+  --dest-service my-grafana
+```
+
+## Performance Tips
+
+<AccordionGroup>
+  <Accordion title="Optimize Queries">
+    - Use appropriate time ranges
+    - Limit data points
+    - Cache dashboard queries
+    - Use query variables
+    - Pre-aggregate when possible
+  </Accordion>
+
+  <Accordion title="Dashboard Performance">
+    - Limit panels per dashboard
+    - Use shared queries
+    - Set appropriate refresh intervals
+    - Hide panels when not needed
+    - Use dashboard folders
+  </Accordion>
+</AccordionGroup>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Metrics (Thanos)" icon="gauge" href="/services/metrics">
+    Prometheus-compatible metrics storage
+  </Card>
+  <Card title="OpenSearch" icon="magnifying-glass" href="/services/opensearch">
+    Log aggregation and search
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Visualize database metrics
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Analytics dashboard data source
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Grafana Documentation](https://grafana.com/docs/)
+- [Grafana Tutorials](https://grafana.com/tutorials/)
+- [Dashboard Gallery](https://grafana.com/grafana/dashboards/)
+
+<Note>
+  **Pre-Built Dashboards**: Aiven provides pre-configured dashboards for monitoring all Aiven services. These are automatically available when you create service integrations.
+</Note>

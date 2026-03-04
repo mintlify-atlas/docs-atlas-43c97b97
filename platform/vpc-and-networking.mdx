@@ -1,0 +1,669 @@
+---
+title: VPC and Networking
+description: Learn about VPC peering, private connectivity, static IPs, IP filtering, and network security on the Aiven Platform.
+---
+
+Aiven provides multiple networking options to securely connect your applications to Aiven services. From public internet access with IP filtering to private VPC peering connections, you can configure networking to match your security and performance requirements.
+
+## Networking overview
+
+Aiven services can be accessed through different network configurations:
+
+<CardGroup cols={2}>
+  <Card title="Public Access" icon="globe">
+    **Internet-based connectivity**
+    
+    - Services accessible over public internet
+    - TLS encryption for all connections
+    - IP allowlisting for access control
+    - Simplest setup, no VPC required
+  </Card>
+  
+  <Card title="VPC Peering" icon="network-wired">
+    **Private network connectivity**
+    
+    - Direct private connection between networks
+    - No traffic over public internet
+    - Lower latency, higher security
+    - Supported on AWS, GCP, Azure, UpCloud
+  </Card>
+  
+  <Card title="AWS PrivateLink" icon="lock">
+    **AWS-specific private connectivity**
+    
+    - Access without VPC peering
+    - Simplified network configuration
+    - Available for select services
+    - AWS only
+  </Card>
+  
+  <Card title="Static IPs" icon="hashtag">
+    **Fixed IP addresses**
+    
+    - Predictable IP addresses for services
+    - Useful for firewall rules
+    - Additional hourly cost
+    - Available on all cloud providers
+  </Card>
+</CardGroup>
+
+<Note>
+All Aiven connections are encrypted with TLS regardless of network configuration. Private connectivity adds an additional layer of security by keeping traffic off the public internet.
+</Note>
+
+## Virtual Private Clouds (VPCs)
+
+VPCs provide isolated network environments for your Aiven services with enhanced security and control.
+
+### VPC benefits
+
+- **Isolation** - Logical separation from other networks
+- **Security** - Control over network traffic and routing
+- **Private IPs** - Services use private IP addresses
+- **Customizable** - Define your own IP ranges (CIDR blocks)
+- **Scalability** - Expand as your infrastructure grows
+
+### VPC types
+
+<Tabs>
+  <Tab title="Project VPCs">
+    **Scope:** Single Aiven project
+    
+    - All services in one project share the VPC
+    - Simplest option for most use cases
+    - Managed at project level
+    
+    ```bash
+    # Create project VPC
+    avn vpc create \
+      --project my-project \
+      --cloud aws-us-east-1 \
+      --network-cidr 10.0.0.0/24
+    
+    # List project VPCs
+    avn vpc list --project my-project
+    ```
+  </Tab>
+  
+  <Tab title="Organization VPCs">
+    **Scope:** Multiple projects across organization
+    
+    - Share VPC across projects
+    - Centralized network management
+    - Limited availability (contact support)
+    
+    ```bash
+    # Create organization VPC
+    avn organization vpc create \
+      --organization-id <ORG_ID> \
+      --cloud aws-us-east-1 \
+      --network-cidr 10.0.0.0/24
+    
+    # List organization VPCs  
+    avn organization vpc list --organization-id <ORG_ID>
+    ```
+    
+    <Note>
+    Organization VPCs are in limited availability. Contact your account team to enable this feature.
+    </Note>
+  </Tab>
+</Tabs>
+
+### Creating VPCs
+
+<Steps>
+  <Step title="Choose CIDR block">
+    Select an IP range that doesn't conflict with your existing networks:
+    
+    Common choices:
+    - `10.0.0.0/24` (256 addresses)
+    - `10.1.0.0/23` (512 addresses)
+    - `192.168.0.0/24` (256 addresses)
+  </Step>
+  
+  <Step title="Create VPC">
+    Using Aiven Console:
+    1. Navigate to project → **VPCs**
+    2. Click **Create VPC**
+    3. Select cloud and region
+    4. Enter network CIDR
+    5. Click **Create**
+  </Step>
+  
+  <Step title="Deploy services">
+    New services in the project can now use the VPC
+  </Step>
+  
+  <Step title="Set up peering (optional)">
+    Create peering connection to connect with your infrastructure
+  </Step>
+</Steps>
+
+<Warning>
+Choose your CIDR block carefully. It cannot be changed after creation, and it must not overlap with networks you want to peer with.
+</Warning>
+
+## VPC Peering
+
+VPC peering creates a private network connection between your Aiven VPC and your own VPC in AWS, GCP, Azure, or UpCloud.
+
+### Peering benefits
+
+- **Private communication** - Direct connection using private IPs
+- **High performance** - Low latency by staying on cloud provider's network
+- **Security** - No exposure to public internet
+- **Scalability** - Support for cross-account and cross-region connections
+
+### VPC peering workflow
+
+<Steps>
+  <Step title="Create Aiven VPC">
+    Create a VPC in your Aiven project with non-overlapping CIDR
+  </Step>
+  
+  <Step title="Create peering connection">
+    Initiate peering from Aiven Console or CLI
+  </Step>
+  
+  <Step title="Accept peering in your cloud">
+    Accept the peering request in your AWS/GCP/Azure console
+  </Step>
+  
+  <Step title="Update route tables">
+    Configure routing to allow traffic between VPCs
+  </Step>
+  
+  <Step title="Update security groups">
+    Allow inbound traffic from Aiven VPC CIDR
+  </Step>
+  
+  <Step title="Test connectivity">
+    Verify services are accessible from your VPC
+  </Step>
+</Steps>
+
+### Peering on AWS
+
+<CodeGroup>
+```bash Create Aiven VPC
+# Create VPC in Aiven
+avn vpc create \
+  --project my-project \
+  --cloud aws-us-east-1 \
+  --network-cidr 10.0.0.0/24
+
+# Note the VPC ID from output
+```
+
+```bash Create peering connection
+# Initiate peering
+avn vpc peering-connection create \
+  --project my-project \
+  --vpc-id <AIVEN_VPC_ID> \
+  --peer-cloud-account <AWS_ACCOUNT_ID> \
+  --peer-vpc <AWS_VPC_ID> \
+  --peer-region us-east-1
+
+# Get peering connection ID from output
+```
+
+```bash Accept in AWS Console
+# In AWS Console:
+# 1. Go to VPC → Peering Connections
+# 2. Find pending peering request
+# 3. Click Actions → Accept Request
+
+# Or use AWS CLI:
+aws ec2 accept-vpc-peering-connection \
+  --vpc-peering-connection-id <PEERING_ID>
+```
+
+```bash Update route table
+# Add route to Aiven VPC CIDR
+aws ec2 create-route \
+  --route-table-id <ROUTE_TABLE_ID> \
+  --destination-cidr-block 10.0.0.0/24 \
+  --vpc-peering-connection-id <PEERING_ID>
+```
+
+```bash Update security group  
+# Allow inbound from Aiven VPC
+aws ec2 authorize-security-group-ingress \
+  --group-id <SECURITY_GROUP_ID> \
+  --protocol tcp \
+  --port 5432 \
+  --cidr 10.0.0.0/24
+```
+</CodeGroup>
+
+### Peering on Google Cloud
+
+<CodeGroup>
+```bash Create Aiven VPC
+avn vpc create \
+  --project my-project \
+  --cloud google-us-central1 \
+  --network-cidr 10.0.0.0/24
+```
+
+```bash Create peering connection
+avn vpc peering-connection create \
+  --project my-project \
+  --vpc-id <AIVEN_VPC_ID> \
+  --peer-cloud-account <GCP_PROJECT_ID> \
+  --peer-vpc <GCP_VPC_NAME>
+
+# Note the peering name from output
+```
+
+```bash Accept in GCP
+# Create peering from your VPC to Aiven VPC
+gcloud compute networks peerings create aiven-peering \
+  --network=<YOUR_VPC_NAME> \
+  --peer-project=<AIVEN_GCP_PROJECT> \
+  --peer-network=<AIVEN_VPC_NAME> \
+  --import-custom-routes \
+  --export-custom-routes
+```
+
+```bash Update firewall rules
+# Allow inbound from Aiven VPC
+gcloud compute firewall-rules create allow-aiven \
+  --network=<YOUR_VPC_NAME> \
+  --allow=tcp:5432 \
+  --source-ranges=10.0.0.0/24
+```
+</CodeGroup>
+
+### Peering on Azure
+
+<CodeGroup>
+```bash Create Aiven VPC
+avn vpc create \
+  --project my-project \
+  --cloud azure-eastus \
+  --network-cidr 10.0.0.0/24
+```
+
+```bash Create peering connection  
+avn vpc peering-connection create \
+  --project my-project \
+  --vpc-id <AIVEN_VPC_ID> \
+  --peer-cloud-account <AZURE_SUBSCRIPTION_ID> \
+  --peer-resource-group <RESOURCE_GROUP> \
+  --peer-vpc <VNET_NAME>
+```
+
+```bash Accept in Azure
+# Create peering in Azure Portal or CLI
+az network vnet peering create \
+  --name aiven-peering \
+  --resource-group <RESOURCE_GROUP> \
+  --vnet-name <YOUR_VNET_NAME> \
+  --remote-vnet <AIVEN_VNET_ID> \
+  --allow-vnet-access
+```
+
+```bash Update NSG rules
+# Allow inbound from Aiven VPC
+az network nsg rule create \
+  --resource-group <RESOURCE_GROUP> \
+  --nsg-name <NSG_NAME> \
+  --name allow-aiven \
+  --priority 100 \
+  --source-address-prefixes 10.0.0.0/24 \
+  --destination-port-ranges 5432 \
+  --access Allow \
+  --protocol Tcp
+```
+</CodeGroup>
+
+### Peering troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Peering connection stuck in pending">
+    **Cause:** Peering not accepted in your cloud account
+    
+    **Solution:**
+    1. Check for pending peering request in your cloud console
+    2. Verify peer account ID, VPC ID, region are correct
+    3. Accept the peering connection
+    4. Wait a few minutes for connection to activate
+  </Accordion>
+  
+  <Accordion title="Cannot connect to service after peering">
+    **Cause:** Missing routes or security group rules
+    
+    **Solution:**
+    1. Verify route table has route to Aiven VPC CIDR
+    2. Check security groups allow traffic from your network
+    3. Verify service is using private VPC endpoint (not public)
+    4. Test with `nc -zv <service-host> <port>`
+  </Accordion>
+  
+  <Accordion title="CIDR blocks overlap">
+    **Cause:** Aiven VPC CIDR overlaps with your VPC
+    
+    **Solution:**
+    1. Delete the Aiven VPC (if no services deployed)
+    2. Create new VPC with non-overlapping CIDR
+    3. If services exist, migrate to new VPC
+  </Accordion>
+</AccordionGroup>
+
+## IP filtering and allowlists
+
+Restrict access to services by IP address without VPC peering:
+
+### Configure IP allowlist
+
+<Tabs>
+  <Tab title="Aiven Console">
+    <Steps>
+      <Step title="Open service">
+        Navigate to service → **Overview**
+      </Step>
+      <Step title="Edit allowlist">
+        Scroll to **Allowed IP Addresses** → **Add entry**
+      </Step>
+      <Step title="Add IP ranges">
+        Enter CIDR blocks (e.g., `203.0.113.0/24`)
+      </Step>
+      <Step title="Apply changes">
+        Click **Save**
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Aiven CLI">
+    ```bash
+    # Set IP allowlist
+    avn service update \
+      --project my-project \
+      --service postgres-1 \
+      -c ip_filter="203.0.113.0/24,198.51.100.0/24"
+    
+    # View current allowlist
+    avn service get postgres-1 \
+      --project my-project \
+      --format '{service_name}: {user_config.ip_filter}'
+    ```
+  </Tab>
+  
+  <Tab title="Terraform">
+    ```hcl
+    resource "aiven_pg" "demo" {
+      project      = "my-project"
+      service_name = "postgres-1"
+      cloud_name   = "aws-us-east-1"
+      plan         = "business-4"
+      
+      pg_user_config {
+        ip_filter = [
+          "203.0.113.0/24",
+          "198.51.100.0/24"
+        ]
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+Be careful when setting IP filters. If you lock yourself out, contact Aiven support or use the API from an allowed IP to remove the filter.
+</Warning>
+
+### IP allowlist best practices
+
+<Steps>
+  <Step title="Use CIDR notation">
+    Specify ranges instead of individual IPs: `203.0.113.0/24` covers 256 addresses
+  </Step>
+  <Step title="Include backup access">
+    Add your VPN or management network in case primary access fails
+  </Step>
+  <Step title="Document IP ranges">
+    Maintain list of which CIDR blocks represent which offices/networks
+  </Step>
+  <Step title="Use VPC for production">
+    IP filtering is good for development, but VPC peering is more secure for production
+  </Step>
+  <Step title="Review regularly">
+    Audit and update IP allowlists quarterly as infrastructure changes
+  </Step>
+</Steps>
+
+## Static IP addresses
+
+Static IPs provide predictable IP addresses for services, useful for firewall rules and IP-based tools:
+
+### When to use static IPs
+
+- **Firewall rules** - Your firewall requires specific IP addresses
+- **IP-based tools** - Proxies or other tools that use IPs instead of hostnames
+- **Predictability** - Need consistent IPs across service updates
+
+<Note>
+Static IPs incur a small additional hourly cost. Most use cases are better served by hostnames or VPC peering.
+</Note>
+
+### Configuring static IPs
+
+<Steps>
+  <Step title="Calculate IPs needed">
+    Services need multiple static IPs for high availability:
+    
+    - **Up to 6 nodes:** 2 × number of nodes
+    - **6+ nodes:** number of nodes + 6
+    
+    Example: 3-node service needs 6 static IPs
+  </Step>
+  
+  <Step title="Create static IPs">
+    ```bash
+    # Create static IP addresses
+    avn static-ip create \
+      --project my-project \
+      --cloud aws-us-east-1
+    
+    # Repeat 6 times for 3-node service
+    ```
+  </Step>
+  
+  <Step title="Associate with service">
+    ```bash
+    # List static IPs to get IDs
+    avn static-ip list --project my-project
+    
+    # Associate each IP with service
+    avn static-ip associate \
+      --project my-project \
+      --service postgres-1 \
+      <STATIC_IP_ID>
+    ```
+  </Step>
+  
+  <Step title="Enable on service">
+    ```bash
+    # Enable static IPs
+    avn service update \
+      --project my-project \
+      --service postgres-1 \
+      -c static_ips=true
+    ```
+    
+    <Note>
+    This triggers a rolling restart of service nodes.
+    </Note>
+  </Step>
+</Steps>
+
+### Managing static IPs
+
+```bash
+# List static IPs and their states
+avn static-ip list --project my-project
+
+# States:
+# - created: IP reserved but not associated
+# - available: IP associated with service
+# - assigned: IP actively in use by service node
+
+# Dissociate IP from service
+avn static-ip dissociate <STATIC_IP_ID>
+
+# Delete static IP (must be dissociated first)
+avn static-ip delete <STATIC_IP_ID>
+```
+
+## Public access in VPC
+
+Services in VPCs are private by default, but you can enable public access if needed:
+
+```bash
+# Enable public access for service in VPC
+avn service update \
+  --project my-project \
+  --service postgres-1 \
+  -c public_access.pg=true
+
+# Enable Prometheus metrics endpoint
+avn service update \
+  --project my-project \
+  --service postgres-1 \
+  -c public_access.prometheus=true
+```
+
+<Warning>
+Enabling public access reduces security benefits of VPC. Use IP filtering if public access is required.
+</Warning>
+
+## AWS Transit Gateway
+
+For complex AWS networking, connect Aiven VPCs to AWS Transit Gateway:
+
+### Transit Gateway benefits
+
+- **Centralized routing** - Single point for all VPC connections
+- **Scalability** - Connect many VPCs without mesh peering
+- **Cross-region** - Connect VPCs across AWS regions
+- **On-premises** - Connect to on-premises networks via VPN/Direct Connect
+
+### Setting up Transit Gateway
+
+<Steps>
+  <Step title="Create Transit Gateway in AWS">
+    ```bash
+    aws ec2 create-transit-gateway \
+      --description "Aiven services TGW"
+    ```
+  </Step>
+  
+  <Step title="Share TGW with Aiven AWS account">
+    Use AWS Resource Access Manager to share TGW with Aiven's AWS account
+  </Step>
+  
+  <Step title="Attach Aiven VPC">
+    ```bash
+    avn vpc transit-gateway-attachment create \
+      --project my-project \
+      --vpc-id <AIVEN_VPC_ID> \
+      --peer-cloud-account <AWS_ACCOUNT_ID> \
+      --peer-resource-id <TGW_ID> \
+      --peer-region us-east-1 \
+      --user-peer-network-cidrs "10.1.0.0/16,10.2.0.0/16"
+    ```
+  </Step>
+  
+  <Step title="Accept attachment in AWS">
+    Accept the Transit Gateway attachment request in AWS Console
+  </Step>
+  
+  <Step title="Update route tables">
+    Configure TGW route tables to route traffic to Aiven VPC
+  </Step>
+</Steps>
+
+## Network security
+
+### Encryption
+
+All Aiven connections use TLS encryption:
+
+- **TLS 1.2+** - Modern encryption standards
+- **Strong cipher suites** - AES-256, ChaCha20
+- **Certificate validation** - Download CA certificates from Console
+- **Perfect forward secrecy** - Keys not compromised if long-term key compromised
+
+```bash
+# Download CA certificate
+avn project ca-get \
+  --project my-project \
+  --target-filepath ca.pem
+
+# Connect with CA validation (PostgreSQL example)  
+psql "postgres://user:pass@host:port/db?sslmode=verify-ca&sslrootcert=ca.pem"
+```
+
+### Firewall protection
+
+Aiven services are protected by dynamically configured firewalls:
+
+- **iptables-based** - Automatic firewall rules
+- **Default deny** - Only allowed sources can connect
+- **IP allowlists** - User-controlled allowed IPs
+- **VPC isolation** - Private IPs only accessible through peering
+
+### DDoS protection
+
+Cloud providers offer DDoS protection:
+
+- **AWS Shield** - Automatic DDoS protection on AWS
+- **GCP Cloud Armor** - DDoS mitigation on Google Cloud
+- **Azure DDoS Protection** - Built-in protection on Azure
+
+## Best practices
+
+<Steps>
+  <Step title="Use VPC peering for production">
+    VPC peering provides better security and performance than public access
+  </Step>
+  <Step title="Plan CIDR blocks carefully">
+    Ensure Aiven VPC CIDRs don't overlap with your networks or future expansion plans
+  </Step>
+  <Step title="Use IP filtering as backup">
+    Even with VPC peering, add IP filtering as defense in depth
+  </Step>
+  <Step title="Monitor network metrics">
+    Track latency, throughput, and connection counts
+  </Step>
+  <Step title="Document network architecture">
+    Maintain diagrams of VPC peering connections and IP ranges
+  </Step>
+  <Step title="Test failover scenarios">
+    Verify connectivity during service updates and failures
+  </Step>
+  <Step title="Use private endpoints">
+    Prefer private VPC endpoints over public even when both are available
+  </Step>
+  <Step title="Avoid static IPs when possible">
+    Use hostnames or VPC peering instead of static IPs to reduce costs
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Security" icon="shield" href="/platform/security">
+    Learn about Aiven's security architecture
+  </Card>
+  <Card title="Service Integrations" icon="link" href="/platform/service-integrations">
+    Connect services using private networking
+  </Card>
+  <Card title="Monitoring & Logs" icon="chart-line" href="/platform/monitoring-and-logs">
+    Monitor network metrics and connection logs
+  </Card>
+  <Card title="Organizations" icon="building" href="/platform/organizations-and-projects">
+    Manage VPC permissions at org level
+  </Card>
+</CardGroup>

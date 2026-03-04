@@ -1,0 +1,189 @@
+---
+title: Authentication
+description: Authenticate API requests using personal or application tokens
+---
+
+The Aiven API uses token-based authentication. All API requests must include a valid authentication token in the `Authorization` header.
+
+## Authentication methods
+
+Aiven supports three types of tokens:
+
+1. **Session tokens**: Created when you log in to the Aiven Console or CLI. Automatically revoked when you log out.
+2. **Personal tokens**: Created manually for API and CLI access. Can be configured with custom session durations and IP restrictions.
+3. **Application tokens**: Linked to application users for non-human access. Recommended for automated systems and integrations.
+
+## Creating a personal token
+
+### Using the Aiven Console
+
+1. Click **User information** in the top right
+2. Select **Tokens**
+3. Click **Generate token**
+4. Enter a description and set the session duration
+5. Click **Generate token**
+6. Copy the token and store it securely
+
+<Warning>
+You cannot view the token after closing the creation window. Store it in a secure location immediately.
+</Warning>
+
+### Using the Aiven CLI
+
+<CodeGroup>
+```bash Create token
+avn user access-token create \
+  --description "My API token" \
+  --max-age-seconds 86400
+```
+
+```bash List tokens
+avn user access-token list
+```
+
+```bash Revoke token
+avn user access-token revoke TOKEN_PREFIX
+```
+</CodeGroup>
+
+## Using tokens in API requests
+
+Include your token in the `Authorization` header with the `aivenv1` prefix:
+
+```
+Authorization: aivenv1 YOUR_TOKEN_HERE
+```
+
+### Examples
+
+<CodeGroup>
+```bash cURL
+curl -H "Authorization: aivenv1 YOUR_TOKEN" \
+  https://api.aiven.io/v1/project
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN"
+}
+
+response = requests.get(
+    "https://api.aiven.io/v1/project",
+    headers=headers
+)
+```
+
+```javascript JavaScript
+const headers = {
+  'Authorization': 'aivenv1 YOUR_TOKEN',
+  'Content-Type': 'application/json'
+};
+
+fetch('https://api.aiven.io/v1/project', { headers })
+  .then(response => response.json())
+  .then(data => console.log(data));
+```
+
+```go Go
+package main
+
+import (
+    "fmt"
+    "net/http"
+    "io/ioutil"
+)
+
+func main() {
+    client := &http.Client{}
+    req, _ := http.NewRequest("GET", "https://api.aiven.io/v1/project", nil)
+    req.Header.Set("Authorization", "aivenv1 YOUR_TOKEN")
+    
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}
+```
+</CodeGroup>
+
+## Token security best practices
+
+<AccordionGroup>
+  <Accordion title="Set appropriate session durations">
+    Configure session durations based on your security requirements. Shorter durations limit the impact of token exposure but require more frequent rotation.
+  </Accordion>
+
+  <Accordion title="Restrict by IP address">
+    Limit token usage to trusted networks by specifying allowed IP address ranges when creating the token.
+  </Accordion>
+
+  <Accordion title="Rotate tokens regularly">
+    Implement a token rotation schedule to minimize security risks. Create a new token before revoking the old one to avoid service interruptions.
+  </Accordion>
+
+  <Accordion title="Use application users for automation">
+    For non-human access like CI/CD pipelines, use application users instead of personal tokens. This provides better audit trails and access control.
+  </Accordion>
+
+  <Accordion title="Never share tokens">
+    Each user or system should have its own token. Sharing tokens makes it impossible to track actions and revoke access selectively.
+  </Accordion>
+
+  <Accordion title="Store tokens securely">
+    - Never commit tokens to version control
+    - Use environment variables or secret management systems
+    - Encrypt tokens at rest
+    - Use vault services like AWS Secrets Manager or HashiCorp Vault
+  </Accordion>
+</AccordionGroup>
+
+## Authentication errors
+
+Common authentication-related errors:
+
+<ResponseField name="401 Unauthorized" type="error">
+  The token is missing, invalid, or expired. Verify the token is correct and hasn't been revoked.
+</ResponseField>
+
+<ResponseField name="403 Forbidden" type="error">
+  The token is valid but doesn't have permission to access the requested resource. Check your organization and project permissions.
+</ResponseField>
+
+### Example error response
+
+```json
+{
+  "errors": [
+    {
+      "message": "Invalid token",
+      "status": 401
+    }
+  ],
+  "message": "Invalid token"
+}
+```
+
+## Application users and tokens
+
+For automated systems and integrations, use application users:
+
+1. Create an application user in your organization
+2. Generate an application token
+3. Assign appropriate permissions to the application user
+4. Use the token in your automated systems
+
+<Info>
+Application tokens provide better security and audit capabilities compared to personal tokens for non-human access.
+</Info>
+
+Learn more about [application users](/docs/platform/concepts/application-users) and [authentication policies](/docs/platform/howto/set-authentication-policies).
+
+## Related resources
+
+- [Create authentication tokens](/docs/platform/howto/create_authentication_token)
+- [Authentication tokens concept](/docs/platform/concepts/authentication-tokens)
+- [Authentication policies](/docs/platform/howto/set-authentication-policies)
+- [Full API reference](https://api.aiven.io/doc/)

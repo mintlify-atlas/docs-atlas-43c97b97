@@ -1,0 +1,773 @@
+---
+title: Aiven for PostgreSQL
+description: Fully managed PostgreSQL with advanced extensions, AI capabilities, and high availability for your relational data needs.
+---
+
+Aiven for PostgreSQL is a fully managed, high-performance relational database service that offers maximum flexibility with advanced extensions including pgvector for AI-powered search, PostGIS for geospatial queries, and TimescaleDB for time-series data.
+
+## Overview
+
+PostgreSQL is a powerful open-source relational database ideal for organizations needing well-structured tabular data storage. Aiven for PostgreSQL provides enterprise-grade reliability, automated operations, and advanced features out of the box.
+
+### Why Choose Aiven for PostgreSQL
+
+<CardGroup cols={2}>
+  <Card title="AI-Powered Search" icon="brain">
+    Built-in pgvector extension for semantic search and similarity matching using vector embeddings
+  </Card>
+  <Card title="Advanced Extensions" icon="puzzle-piece">
+    PostGIS for location queries, TimescaleDB for time-series, and 50+ extensions available
+  </Card>
+  <Card title="High Availability" icon="shield-check">
+    Multi-node clusters with automatic failover and 99.99% SLA on business plans
+  </Card>
+  <Card title="Native JSON Support" icon="brackets-curly">
+    Store and query nested datasets with native jsonb format for flexible schemas
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="pgvector for AI Applications">
+    Enable AI-powered similarity search and vector operations:
+
+    - Store ML-generated embeddings directly in PostgreSQL
+    - Perform semantic search across text, images, and more
+    - Support for exact and approximate nearest neighbor search
+    - Index types: IVFFlat and HNSW for performance
+
+    **Use Cases:**
+    - Recommendation systems
+    - Semantic document search
+    - Image similarity detection
+    - Fraud detection through pattern matching
+
+    **Example:**
+    ```sql
+    -- Enable pgvector
+    CREATE EXTENSION vector;
+
+    -- Create table with vector column
+    CREATE TABLE items (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      embedding vector(1536)
+    );
+
+    -- Create HNSW index for fast similarity search
+    CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);
+
+    -- Find similar items
+    SELECT name, 1 - (embedding <=> '[0.1, 0.2, ...]') AS similarity
+    FROM items
+    ORDER BY embedding <=> '[0.1, 0.2, ...]'
+    LIMIT 10;
+    ```
+  </Accordion>
+
+  <Accordion title="PostGIS for Geospatial Data">
+    Advanced spatial database capabilities:
+
+    - Store points, lines, polygons, and complex geometries
+    - Spatial indexing with GiST and SP-GiST
+    - Distance calculations and proximity queries
+    - Map projections and coordinate transformations
+
+    **Example:**
+    ```sql
+    CREATE EXTENSION postgis;
+
+    CREATE TABLE locations (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      location GEOGRAPHY(POINT, 4326)
+    );
+
+    -- Find locations within 1000 meters
+    SELECT name 
+    FROM locations 
+    WHERE ST_DWithin(
+      location, 
+      ST_GeogFromText('POINT(-122.4194 37.7749)'), 
+      1000
+    );
+    ```
+  </Accordion>
+
+  <Accordion title="TimescaleDB for Time-Series">
+    Optimized for time-series and IoT data:
+
+    - Automatic partitioning by time
+    - Continuous aggregates for real-time rollups
+    - Data retention policies
+    - Compression for storage efficiency
+
+    **Example:**
+    ```sql
+    CREATE EXTENSION timescaledb;
+
+    CREATE TABLE sensor_data (
+      time TIMESTAMPTZ NOT NULL,
+      sensor_id INTEGER,
+      temperature DOUBLE PRECISION,
+      humidity DOUBLE PRECISION
+    );
+
+    SELECT create_hypertable('sensor_data', 'time');
+
+    -- Query with time-bucketing
+    SELECT time_bucket('1 hour', time) AS hour,
+           sensor_id,
+           avg(temperature) AS avg_temp
+    FROM sensor_data
+    WHERE time > NOW() - INTERVAL '24 hours'
+    GROUP BY hour, sensor_id;
+    ```
+  </Accordion>
+
+  <Accordion title="Connection Pooling">
+    Built-in PgBouncer for efficient connection management:
+
+    - Reduce connection overhead
+    - Session, transaction, and statement pooling modes
+    - Handle thousands of client connections
+    - Automatic connection recycling
+  </Accordion>
+
+  <Accordion title="Cross-Region Disaster Recovery (CRDR)">
+    Multi-region replication for business continuity:
+
+    - Asynchronous replication across regions
+    - Failover to secondary region
+    - Switchover for planned maintenance
+    - RPO (Recovery Point Objective) in seconds
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create PostgreSQL Service">
+    Deploy a PostgreSQL service through Aiven Console, CLI, or API:
+
+    ```bash
+    avn service create my-pg \
+      --service-type pg \
+      --cloud aws-us-east-1 \
+      --plan business-4
+    ```
+
+    Choose from multiple service plans:
+    - **Hobbyist**: Single node for development
+    - **Startup**: Single node for small apps
+    - **Business**: High availability with standby
+    - **Premium**: Enhanced HA with 2 standby nodes
+  </Step>
+
+  <Step title="Enable Extensions">
+    Enable extensions you need for your use case:
+
+    ```sql
+    CREATE EXTENSION IF NOT EXISTS pgvector;      -- Vector search
+    CREATE EXTENSION IF NOT EXISTS postgis;       -- Geospatial
+    CREATE EXTENSION IF NOT EXISTS timescaledb;   -- Time-series
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements; -- Query stats
+    ```
+  </Step>
+
+  <Step title="Create Database and Tables">
+    Set up your database schema:
+
+    ```sql
+    CREATE DATABASE myapp;
+    \c myapp
+
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    ```
+  </Step>
+
+  <Step title="Connect Your Application">
+    Use the connection string from the service overview to connect your application.
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+
+    # Connection parameters
+    conn = psycopg2.connect(
+        host='pg-service.aivencloud.com',
+        port=12345,
+        dbname='defaultdb',
+        user='avnadmin',
+        password='your-password',
+        sslmode='require'
+    )
+
+    # Execute query
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT version();")
+        result = cur.fetchone()
+        print(result['version'])
+
+    # Insert data
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO users (email, name) VALUES (%s, %s)",
+            ('user@example.com', 'John Doe')
+        )
+        conn.commit()
+
+    conn.close()
+    ```
+
+    **Using SQLAlchemy:**
+    ```python
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(
+        'postgresql://avnadmin:password@pg-service.aivencloud.com:12345/defaultdb?sslmode=require'
+    )
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT * FROM users"))
+        for row in result:
+            print(row)
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const { Client } = require('pg');
+
+    const client = new Client({
+      host: 'pg-service.aivencloud.com',
+      port: 12345,
+      database: 'defaultdb',
+      user: 'avnadmin',
+      password: 'your-password',
+      ssl: {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync('./ca.pem').toString()
+      }
+    });
+
+    await client.connect();
+
+    // Query data
+    const res = await client.query('SELECT * FROM users WHERE id = $1', [1]);
+    console.log(res.rows[0]);
+
+    // Insert data
+    await client.query(
+      'INSERT INTO users (email, name) VALUES ($1, $2)',
+      ['user@example.com', 'Jane Doe']
+    );
+
+    await client.end();
+    ```
+
+    **Using Prisma:**
+    ```javascript
+    // schema.prisma
+    datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL")
+    }
+
+    model User {
+      id        Int      @id @default(autoincrement())
+      email     String   @unique
+      name      String?
+      createdAt DateTime @default(now())
+    }
+
+    // client.js
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    const user = await prisma.user.create({
+      data: {
+        email: 'user@example.com',
+        name: 'John Doe'
+      }
+    });
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import java.sql.*;
+
+    public class PostgreSQLExample {
+        public static void main(String[] args) {
+            String url = "jdbc:postgresql://pg-service.aivencloud.com:12345/defaultdb?sslmode=require";
+            String user = "avnadmin";
+            String password = "your-password";
+
+            try (Connection conn = DriverManager.getConnection(url, user, password)) {
+                // Query data
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT * FROM users");
+                
+                while (rs.next()) {
+                    System.out.println(rs.getString("name"));
+                }
+
+                // Insert data
+                PreparedStatement pstmt = conn.prepareStatement(
+                    "INSERT INTO users (email, name) VALUES (?, ?)"
+                );
+                pstmt.setString(1, "user@example.com");
+                pstmt.setString(2, "John Doe");
+                pstmt.executeUpdate();
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        "database/sql"
+        "fmt"
+        "log"
+        _ "github.com/lib/pq"
+    )
+
+    func main() {
+        connStr := "host=pg-service.aivencloud.com port=12345 user=avnadmin password=your-password dbname=defaultdb sslmode=require"
+        db, err := sql.Open("postgres", connStr)
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer db.Close()
+
+        // Query data
+        rows, err := db.Query("SELECT id, email, name FROM users")
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer rows.Close()
+
+        for rows.Next() {
+            var id int
+            var email, name string
+            if err := rows.Scan(&id, &email, &name); err != nil {
+                log.Fatal(err)
+            }
+            fmt.Printf("%d: %s (%s)\n", id, name, email)
+        }
+
+        // Insert data
+        _, err = db.Exec(
+            "INSERT INTO users (email, name) VALUES ($1, $2)",
+            "user@example.com", "John Doe",
+        )
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Ruby">
+    ```ruby
+    require 'pg'
+
+    conn = PG.connect(
+      host: 'pg-service.aivencloud.com',
+      port: 12345,
+      dbname: 'defaultdb',
+      user: 'avnadmin',
+      password: 'your-password',
+      sslmode: 'require'
+    )
+
+    # Query data
+    result = conn.exec('SELECT * FROM users')
+    result.each do |row|
+      puts "#{row['name']}: #{row['email']}"
+    end
+
+    # Insert data
+    conn.exec_params(
+      'INSERT INTO users (email, name) VALUES ($1, $2)',
+      ['user@example.com', 'John Doe']
+    )
+
+    conn.close
+    ```
+  </Tab>
+</Tabs>
+
+## High Availability
+
+Aiven for PostgreSQL provides multiple levels of availability:
+
+<Tabs>
+  <Tab title="Business Plan">
+    **1 Primary + 1 Standby Node**
+
+    - Synchronous replication to standby
+    - Automatic failover in case of primary failure
+    - Read replicas for read scaling
+    - 14 days backup retention
+    - 99.99% SLA
+
+    **Failure Handling:**
+    - Primary fails → Standby promoted automatically
+    - Standby fails → Primary continues serving
+    - Service URI remains constant (only IP changes)
+  </Tab>
+
+  <Tab title="Premium Plan">
+    **1 Primary + 2 Standby Nodes**
+
+    - Enhanced redundancy with two standby nodes
+    - Maintains availability even if two nodes fail
+    - Intelligent failover to most up-to-date standby
+    - 30 days backup retention
+    - 99.99% SLA
+
+    **Additional Benefits:**
+    - Higher fault tolerance
+    - Reduced data loss risk
+    - Faster recovery time
+  </Tab>
+
+  <Tab title="CRDR (Cross-Region)">
+    **Multi-Region Disaster Recovery**
+
+    - Asynchronous replication to another region
+    - Failover for regional outages
+    - Switchover for planned maintenance
+    - RPO typically under 1 minute
+
+    **Setup CRDR:**
+    ```bash
+    avn service cross-region-replica-create \
+      --project myproject \
+      --service my-pg \
+      --destination-cloud aws-eu-west-1
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Optimization
+
+<AccordionGroup>
+  <Accordion title="Indexing Strategies">
+    Choose the right index type for your queries:
+
+    ```sql
+    -- B-tree (default) - most common
+    CREATE INDEX idx_email ON users(email);
+
+    -- GiST for full-text search
+    CREATE INDEX idx_content_search ON articles USING GiST(to_tsvector('english', content));
+
+    -- GIN for JSONB and arrays
+    CREATE INDEX idx_metadata ON products USING GIN(metadata);
+
+    -- BRIN for large time-series tables
+    CREATE INDEX idx_created_at ON events USING BRIN(created_at);
+
+    -- Partial index for specific conditions
+    CREATE INDEX idx_active_users ON users(email) WHERE active = true;
+    ```
+  </Accordion>
+
+  <Accordion title="Query Optimization">
+    Use EXPLAIN ANALYZE to optimize queries:
+
+    ```sql
+    -- Analyze query performance
+    EXPLAIN (ANALYZE, BUFFERS) 
+    SELECT * FROM users WHERE email LIKE '%@example.com';
+
+    -- Use pg_stat_statements for query stats
+    SELECT query, calls, mean_exec_time, total_exec_time
+    FROM pg_stat_statements
+    ORDER BY total_exec_time DESC
+    LIMIT 10;
+    ```
+  </Accordion>
+
+  <Accordion title="Connection Pooling">
+    Configure PgBouncer for optimal connection management:
+
+    - **Session mode**: For applications that need session-level features
+    - **Transaction mode**: Best for most web applications
+    - **Statement mode**: Maximum connection reuse
+
+    Update via Aiven Console or API:
+    ```bash
+    avn service update my-pg \
+      -c pgbouncer.pool_mode=transaction \
+      -c pgbouncer.max_client_conn=1000
+    ```
+  </Accordion>
+
+  <Accordion title="Shared Buffers Tuning">
+    PostgreSQL automatically tunes shared_buffers based on available memory:
+
+    - Business-4: 1 GB shared_buffers
+    - Business-8: 2 GB shared_buffers
+    - Business-16: 4 GB shared_buffers
+
+    Monitor buffer usage:
+    ```sql
+    SELECT * FROM pg_stat_bgwriter;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Backup and Recovery
+
+<CardGroup cols={2}>
+  <Card title="Automatic Backups" icon="clock">
+    - Continuous WAL archiving
+    - Point-in-time recovery (PITR)
+    - Encrypted backups in object storage
+    - Retention: 2-30 days based on plan
+  </Card>
+
+  <Card title="Manual Backups" icon="floppy-disk">
+    - On-demand backup creation
+    - Fork services from backups
+    - Export backups for migration
+    - Cross-region backup storage
+  </Card>
+</CardGroup>
+
+**Restore to Point in Time:**
+```bash
+avn service update my-pg \
+  --restore-point-in-time "2024-03-04T10:30:00Z"
+```
+
+**Fork a Service:**
+```bash
+avn service create my-pg-fork \
+  --service-type pg \
+  --cloud aws-us-east-1 \
+  --plan business-4 \
+  --fork-from my-pg
+```
+
+## Monitoring and Observability
+
+### Key Metrics
+
+<Tabs>
+  <Tab title="Performance Metrics">
+    - **Connections**: Active and idle connections
+    - **Transactions per second**: Database throughput
+    - **Cache hit ratio**: Buffer efficiency (target >99%)
+    - **Query latency**: Average query execution time
+    - **Replication lag**: Delay between primary and standby
+  </Tab>
+
+  <Tab title="Resource Metrics">
+    - **CPU utilization**: Compute usage
+    - **Memory usage**: RAM consumption
+    - **Disk I/O**: Read/write operations
+    - **Disk space**: Storage utilization
+    - **Network throughput**: Data transfer rates
+  </Tab>
+
+  <Tab title="Query Insights">
+    Enable pg_stat_statements:
+    ```sql
+    CREATE EXTENSION pg_stat_statements;
+
+    -- Top 10 slowest queries
+    SELECT 
+      substring(query, 1, 50) AS query_snippet,
+      calls,
+      mean_exec_time,
+      total_exec_time
+    FROM pg_stat_statements
+    ORDER BY mean_exec_time DESC
+    LIMIT 10;
+    ```
+  </Tab>
+</Tabs>
+
+### Integration with Aiven Services
+
+<CodeGroup>
+```bash Send Metrics to Grafana
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-pg \
+  --dest-service my-grafana
+```
+
+```bash Send Logs to OpenSearch
+avn service integration-create \
+  --integration-type logs \
+  --source-service my-pg \
+  --dest-service my-opensearch
+```
+</CodeGroup>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Authentication and Authorization">
+    - Use strong passwords for database users
+    - Implement least-privilege access control
+    - Create separate users for applications
+    - Use certificate authentication where possible
+    - Rotate credentials regularly
+
+    ```sql
+    -- Create read-only user
+    CREATE USER readonly_user WITH PASSWORD 'strong_password';
+    GRANT CONNECT ON DATABASE myapp TO readonly_user;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly_user;
+    ```
+  </Accordion>
+
+  <Accordion title="Network Security">
+    - Enable VPC peering for private connectivity
+    - Use IP allowlisting to restrict access
+    - Configure AWS PrivateLink for secure connections
+    - Always use SSL/TLS connections
+    - Implement application-level encryption for sensitive data
+  </Accordion>
+
+  <Accordion title="Audit Logging">
+    Enable pgaudit for compliance:
+
+    ```sql
+    CREATE EXTENSION pgaudit;
+
+    -- Audit all DDL and DCL statements
+    ALTER SYSTEM SET pgaudit.log = 'ddl, role';
+
+    -- Audit specific tables
+    ALTER TABLE sensitive_data SET (pgaudit.log = 'read, write');
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Web Applications">
+    Traditional web apps with transactional data:
+    - E-commerce platforms
+    - Content management systems
+    - User authentication and profiles
+    - Session storage
+  </Tab>
+
+  <Tab title="AI/ML Applications">
+    Vector search and embeddings:
+    - Semantic search engines
+    - Recommendation systems
+    - Document similarity
+    - RAG (Retrieval Augmented Generation)
+  </Tab>
+
+  <Tab title="Geospatial Apps">
+    Location-based services:
+    - Maps and navigation
+    - Ride-sharing platforms
+    - Delivery routing
+    - Proximity searches
+  </Tab>
+
+  <Tab title="IoT and Time-Series">
+    Sensor data and metrics:
+    - Device telemetry
+    - Application monitoring
+    - Financial market data
+    - Environmental monitoring
+  </Tab>
+</Tabs>
+
+## Migration to Aiven
+
+<Steps>
+  <Step title="Prepare Source Database">
+    - Document current schema and extensions
+    - Identify custom configurations
+    - Plan for minimal downtime
+  </Step>
+
+  <Step title="Use aiven-db-migrate">
+    Built-in migration tool for PostgreSQL:
+
+    ```bash
+    avn service migration-start my-pg \
+      --source-host source-db.example.com \
+      --source-port 5432 \
+      --source-username postgres \
+      --source-password xxx \
+      --source-dbname mydb
+    ```
+  </Step>
+
+  <Step title="Verify Migration">
+    - Check row counts
+    - Verify indexes and constraints
+    - Test application connectivity
+    - Monitor replication lag
+  </Step>
+
+  <Step title="Cutover">
+    - Stop writes to source
+    - Wait for replication to complete
+    - Update application connection strings
+    - Verify application functionality
+  </Step>
+</Steps>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Stream changes with Debezium CDC to Kafka
+  </Card>
+  <Card title="Apache Flink" icon="wave-pulse" href="/services/flink">
+    Real-time processing with Flink PostgreSQL connector
+  </Card>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Visualize PostgreSQL data and metrics
+  </Card>
+  <Card title="OpenSearch" icon="magnifying-glass" href="/services/opensearch">
+    Full-text search with PostgreSQL data
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [PostgreSQL Official Documentation](https://www.postgresql.org/docs/)
+- [pgvector Extension](https://github.com/pgvector/pgvector)
+- [PostGIS Documentation](https://postgis.net/)
+- [TimescaleDB Documentation](https://docs.timescale.com/)
+
+<Note>
+  **Migration Support**: Aiven provides free migration assistance for Enterprise customers. Contact support for help migrating your PostgreSQL databases.
+</Note>

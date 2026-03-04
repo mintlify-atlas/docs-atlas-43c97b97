@@ -1,0 +1,246 @@
+---
+title: Elasticsearch logs integration
+description: Store and analyze service logs from Aiven in an external Elasticsearch cluster for search, analysis, and long-term storage.
+---
+
+You can store logs from your Aiven services in an external Elasticsearch service, enabling you to search, analyze, and archive logs using your own Elasticsearch infrastructure.
+
+## Prerequisites
+
+Before setting up the integration, collect these connection details:
+
+| Variable | Description |
+|----------|-------------|
+| `ELASTICSEARCH_USER` | Username to access the Elasticsearch service |
+| `ELASTICSEARCH_PASSWORD` | Password to access the Elasticsearch service |
+| `ELASTICSEARCH_HOST` | HTTPS service host of your external Elasticsearch service |
+| `ELASTICSEARCH_PORT` | Port to use for the connection |
+| `CA_CERTIFICATE` | CA certificate in PEM format (optional, if necessary) |
+| `CONNECTION_NAME` | Name of this external connection to be used with Aiven services |
+
+## Create external Elasticsearch integration
+
+Start by setting up an external service integration for Elasticsearch.
+
+<Steps>
+  <Step title="Access integration endpoints">
+    Log in to the [Aiven Console](https://console.aiven.io/) and navigate to your project.
+  </Step>
+  
+  <Step title="Select External Elasticsearch">
+    Click **Integration endpoints** and select **External Elasticsearch** from the list.
+  </Step>
+  
+  <Step title="Add new endpoint">
+    Select **Add new endpoint** to create a new integration.
+  </Step>
+  
+  <Step title="Configure endpoint name">
+    Set a preferred endpoint name (this will be your `CONNECTION_NAME`).
+  </Step>
+  
+  <Step title="Configure connection URL">
+    In the connection URL field, set the connection string:
+    
+    ```
+    https://ELASTICSEARCH_USER:ELASTICSEARCH_PASSWORD@ELASTICSEARCH_HOST:ELASTICSEARCH_PORT
+    ```
+    
+    Replace the placeholders with your actual values.
+    
+    Example:
+    ```
+    https://admin:mypassword@elasticsearch.example.com:9200
+    ```
+  </Step>
+  
+  <Step title="Set index prefix">
+    Configure the desired index prefix. This should not overlap with any existing indexes in your Elasticsearch service.
+    
+    <Note>
+    Logs are split per day with index names consisting of your prefix and a date in `year-month-day` format (e.g., `logs-2022-08-30`).
+    </Note>
+  </Step>
+  
+  <Step title="Add CA certificate (optional)">
+    If your Elasticsearch service uses a custom CA certificate, add the certificate body in PEM format.
+    
+    This is typically needed if:
+    - Your Elasticsearch server uses a self-signed certificate
+    - Your server's certificate is issued by an internal CA
+  </Step>
+  
+  <Step title="Create endpoint">
+    Click **Create** to save the endpoint configuration.
+  </Step>
+</Steps>
+
+## Send service logs to Elasticsearch
+
+After creating the integration endpoint, enable it for your Aiven services.
+
+<Steps>
+  <Step title="Navigate to service">
+    Click **Services** and open the service whose logs you want to send to Elasticsearch.
+  </Step>
+  
+  <Step title="Access integrations">
+    On the sidebar, click **Integrations**.
+  </Step>
+  
+  <Step title="Select Elasticsearch Logs">
+    Select **Elasticsearch Logs** from the list of available integrations.
+  </Step>
+  
+  <Step title="Enable integration">
+    Select the **Endpoint name** you created earlier and click **Enable**.
+  </Step>
+  
+  <Step title="Verify logs">
+    Logs will begin flowing to your Elasticsearch service. Check your Elasticsearch cluster to verify the indices are being created.
+  </Step>
+</Steps>
+
+## Index naming convention
+
+Logs are automatically organized into daily indices:
+
+- **Format**: `{prefix}-{year}-{month}-{day}`
+- **Example**: If your prefix is `aiven-logs`, indices will be named:
+  - `aiven-logs-2024-03-01`
+  - `aiven-logs-2024-03-02`
+  - `aiven-logs-2024-03-03`
+
+This daily index pattern:
+- Facilitates easier log retention management
+- Improves search performance for time-based queries
+- Simplifies index lifecycle management
+
+## Using Aiven CLI
+
+You can also set up the integration using the Aiven CLI:
+
+<CodeGroup>
+```bash Create endpoint
+avn service integration-endpoint-create \
+  --project your-project \
+  --endpoint-name CONNECTION_NAME \
+  --endpoint-type external_elasticsearch_logs \
+  --user-config-json '{
+    "url": "https://ELASTICSEARCH_USER:ELASTICSEARCH_PASSWORD@ELASTICSEARCH_HOST:ELASTICSEARCH_PORT",
+    "index_prefix": "aiven-logs"
+  }'
+```
+
+```bash List endpoints
+avn service integration-endpoint-list --project your-project
+```
+
+```bash Enable integration
+avn service integration-create \
+  --project your-project \
+  --integration-type external_elasticsearch_logs \
+  --source-service your-service-name \
+  --dest-endpoint-id ENDPOINT_ID
+```
+</CodeGroup>
+
+### CLI commands reference
+
+- [avn service integration-endpoint-create](/docs/tools/cli/service/integration#avn_service_integration_endpoint_create) - Create integration endpoint
+- [avn service integration-endpoint-list](/docs/tools/cli/service/integration#avn_service_integration_endpoint_list) - List integration endpoints
+- [avn service integration-create](/docs/tools/cli/service/integration#avn_service_integration_create) - Enable integration on service
+
+## Log structure
+
+Logs sent to Elasticsearch include:
+
+- **Timestamp** - When the log event occurred
+- **Hostname** - Service host that generated the log
+- **Service name** - Aiven service name
+- **Log level** - Severity level (INFO, WARNING, ERROR, etc.)
+- **Message** - Log message content
+- **Additional fields** - Service-specific metadata
+
+## Troubleshooting
+
+### Logs not appearing
+
+- Verify the connection URL format is correct with proper URL encoding
+- Check that Elasticsearch credentials have write permissions
+- Confirm the Elasticsearch service is accessible from Aiven infrastructure
+- Verify the index prefix doesn't conflict with existing indices
+- Check Elasticsearch cluster health and available disk space
+
+### Authentication failures
+
+- Verify username and password are correct
+- Check that the user has appropriate permissions in Elasticsearch
+- Confirm the Elasticsearch service allows connections from Aiven
+- Review any IP allowlists or firewall rules
+
+### Certificate errors
+
+- Ensure the CA certificate is in proper PEM format
+- Verify the certificate matches your Elasticsearch server
+- Check that the certificate hasn't expired
+- Confirm the certificate chain is complete
+
+### Index creation failures
+
+- Check that the index prefix doesn't conflict with existing indices
+- Verify Elasticsearch has sufficient resources to create new indices
+- Review Elasticsearch logs for any error messages
+- Confirm index templates or ILM policies aren't blocking creation
+
+### Connection timeout
+
+- Verify the Elasticsearch host and port are correct
+- Check that the Elasticsearch service is running
+- Confirm network connectivity between Aiven and Elasticsearch
+- Review firewall rules and security groups
+
+## Index management
+
+### Retention policies
+
+To manage log retention:
+
+1. Use Elasticsearch Index Lifecycle Management (ILM) policies
+2. Set up automated deletion of old indices
+3. Configure index rollover based on size or age
+4. Archive indices to cold storage before deletion
+
+### Search optimization
+
+For better search performance:
+
+- Use index patterns for time-based queries
+- Configure appropriate shard and replica counts
+- Set up index templates for consistent field mappings
+- Consider using data tiers for older logs
+
+### Storage considerations
+
+- Monitor Elasticsearch disk usage regularly
+- Set up alerts for high disk usage
+- Plan capacity based on log volume and retention period
+- Use compression for older indices
+
+## Security best practices
+
+<Warning>
+- Always use HTTPS for the connection URL
+- Store credentials securely
+- Use strong passwords for Elasticsearch users
+- Limit Elasticsearch user permissions to only what's needed
+- Regularly rotate credentials
+- Monitor access logs for suspicious activity
+</Warning>
+
+## Related resources
+
+- [Set up log integration with Aiven for OpenSearch](/docs/products/opensearch/howto/opensearch-log-integration)
+- [Rsyslog integration](/integrations/rsyslog)
+- [Service integrations overview](/integrations/overview)
+- [Aiven CLI reference](/docs/tools/cli)

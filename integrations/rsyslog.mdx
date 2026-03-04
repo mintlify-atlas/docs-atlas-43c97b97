@@ -1,0 +1,294 @@
+---
+title: Rsyslog integration
+description: Forward service logs from Aiven to external systems using the rsyslog protocol, including Coralogix, Loggly, Mezmo, New Relic, Papertrail, and Sumo Logic.
+---
+
+In addition to using Aiven for OpenSearch to store logs from your Aiven services, you can integrate with external monitoring systems that support the rsyslog protocol.
+
+The Rsyslog integration provides a flexible way to send logs to any rsyslog-compatible destination, including popular third-party logging platforms.
+
+## Create Rsyslog integration
+
+### Add Rsyslog integration endpoint
+
+Add the remote syslog server you want to send logs to in the project that contains the service you want to integrate.
+
+#### Using Aiven Console
+
+<Steps>
+  <Step title="Access integration endpoints">
+    Navigate to the **Integration endpoints** page in the [Aiven Console](https://console.aiven.io/).
+  </Step>
+  
+  <Step title="Create new Syslog endpoint">
+    Select **Create new Syslog endpoint** and configure the connection parameters.
+  </Step>
+  
+  <Step title="Save endpoint">
+    Save the endpoint configuration for use with your services.
+  </Step>
+</Steps>
+
+#### Using Aiven CLI
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d example-syslog -t rsyslog \
+    -c server=logs.example.com -c port=514 \
+    -c format=rfc5424 -c tls=true
+```
+
+### Configuration parameters
+
+#### Required parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `server` | DNS name or IPv4 address of the server |
+| `port` | Port to connect to |
+| `format` | Message format: `rfc3164` (old BSD style), `rfc5424` (current syslog), or `custom` |
+| `tls` | Use TLS encryption (highly recommended as logs may contain sensitive information) |
+
+<Warning>
+Always set `tls=true` if the remote server supports it, as log messages may contain sensitive information and are not filtered.
+</Warning>
+
+#### Conditional parameters
+
+Required if `format=custom`:
+
+| Parameter | Description |
+|-----------|-------------|
+| `logline` | Syslog log line template for custom format, supporting limited rsyslog style templating using `%tag%` |
+
+Supported tags: `HOSTNAME`, `app-name`, `msg`, `msgid`, `pri`, `procid`, `structured-data`, `timestamp`, and `timestamp:::date-rfc3339`.
+
+#### Optional parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `sd` | Content of the structured data block for `rfc5424` messages |
+| `ca` | Certificate Authority in PEM format for verifying server certificates |
+| `key` | Client key in PEM format if server requires client authentication |
+| `cert` | Client certificate in PEM format |
+| `max_message_size` | Maximum rsyslog message size (default: 8192 bytes) |
+
+### Enable Rsyslog integration on a service
+
+#### Using Aiven Console
+
+<Steps>
+  <Step title="Navigate to service">
+    In the [Aiven Console](https://console.aiven.io/), go to the **Overview** page of the target service.
+  </Step>
+  
+  <Step title="Manage integrations">
+    In the **Service integrations** section, select **Manage integrations**.
+  </Step>
+  
+  <Step title="Enable Rsyslog">
+    Select your previously configured Rsyslog service integration and click **Enable**.
+  </Step>
+</Steps>
+
+#### Using Aiven CLI
+
+<CodeGroup>
+```bash List endpoints
+avn service integration-endpoint-list --project your-project
+```
+
+```bash Enable integration
+avn service integration-create --project your-project \
+    -t rsyslog -s your-service \
+    -D 618fb764-5832-4636-ba26-0d9857222cfd
+```
+</CodeGroup>
+
+The endpoint ID is obtained from the list command output:
+
+```bash
+ENDPOINT_ID                           ENDPOINT_NAME   ENDPOINT_TYPE
+====================================  ==============  =============
+618fb764-5832-4636-ba26-0d9857222cfd  example-syslog  rsyslog
+```
+
+## Platform-specific configurations
+
+<Note>
+All integrations can be configured using the Aiven Console or the Aiven CLI, though the examples below use CLI for easier copying.
+</Note>
+
+### Coralogix
+
+For [Coralogix](https://coralogix.com/) integration, use a custom `logline` format with your key and company ID.
+
+The Syslog endpoint depends on your account:
+- Ends with `.com`: use `syslogserver.coralogix.com`
+- Ends with `.us`: use `syslogserver.coralogix.us`
+- Ends with `.in`: use `syslogserver.app.coralogix.in`
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d coralogix -t rsyslog \
+    -c server=syslogserver.coralogix.us -c port=5142 \
+    -c tls=false -c format=custom \
+    -c logline='{"fields": {"private_key":"YOUR_CORALOGIX_KEY","company_id":"YOUR_COMPANY_ID","app_name":"%app-name%","subsystem_name":"programname"},"message": {"message":"%msg%","program_name":"%programname%","pri_text":"%pri%","hostname":"%HOSTNAME%"}}'
+```
+
+<Note>
+For Coralogix, `tls` needs to be set to `false`.
+</Note>
+
+See the [Coralogix Rsyslog documentation](https://coralogix.com/docs/) for more information.
+
+### Loggly
+
+For [Loggly](https://www.loggly.com/) integration, use a custom `logline` format with your token.
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d loggly -t rsyslog \
+    -c server=logs-01.loggly.com -c port=6514 \
+    -c tls=true -c format=custom \
+    -c logline='<%pri%>%protocol-version% %timestamp:::date-rfc3339% %HOSTNAME% %app-name% %procid% %msgid% TOKEN tag="RsyslogTLS"] %msg%'
+```
+
+Replace `TOKEN` with your Loggly customer token.
+
+### Mezmo (LogDNA)
+
+For [Mezmo](https://www.mezmo.com/) syslog integration, use a custom `logline` format with your key.
+
+```bash
+avn service integration-endpoint-create --project your-project \
+   -d logdna -t rsyslog \
+   -c server=syslog-a.logdna.com -c port=6514 \
+   -c tls=true -c format=custom \
+   -c logline='<%pri%>%protocol-version% %timestamp:::date-rfc3339% %HOSTNAME% %app-name% %procid% %msgid% [logdna@48950 key="YOUR_KEY_GOES_HERE"] %msg%'
+```
+
+Replace `YOUR_KEY_GOES_HERE` with your Mezmo ingestion key.
+
+### New Relic
+
+For [New Relic](https://newrelic.com/) syslog integration, use a custom `logline` format prepended with your [New Relic License Key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/#license-key). The format matches the [built-in Grok pattern](https://docs.newrelic.com/docs/logs/ui-data/built-log-parsing-rules/#syslog-rfc5424).
+
+The server value depends on account location:
+- EU region: `newrelic.syslog.eu.nr-data.net` (US endpoint will not work for EU accounts)
+- Other regions: `newrelic.syslog.nr-data.net`
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d newrelic -t rsyslog \
+    -c server=newrelic.syslog.nr-data.net -c port=6514 \
+    -c tls=true -c format=custom \
+    -c logline='YOUR_LICENSE_KEY <%pri%>%protocol-version% %timestamp:::date-rfc3339% %hostname% %app-name% %procid% %msgid% %structured-data% %msg%'
+```
+
+Replace `YOUR_LICENSE_KEY` with your New Relic license key.
+
+See [Use TCP endpoint to forward logs to New Relic](https://docs.newrelic.com/docs/logs/log-api/use-tcp-endpoint-forward-logs-new-relic/) for more information.
+
+### Papertrail
+
+[Papertrail](https://www.papertrail.com/) identifies clients based on the server and port combination. Copy the values from your Papertrail "Log Destinations" page.
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d papertrail -t rsyslog \
+    -c server=logsN.papertrailapp.com -c port=XXXXX \
+    -c tls=true -c format=rfc3164
+```
+
+<Note>
+- Use `format=rfc3164` for Papertrail
+- You don't need the ca-bundle as Papertrail servers use certificates signed by a known CA
+- Replace `logsN.papertrailapp.com` and `XXXXX` with your specific values from Papertrail
+</Note>
+
+### Sumo Logic
+
+For [Sumo Logic](https://www.sumologic.com/), use a custom `logline` format with your collector token.
+
+Replace `YOUR_DEPLOYMENT` with one of: `au`, `ca`, `de`, `eu`, `fed`, `in`, `jp`, `us1`, or `us2`.
+
+```bash
+avn service integration-endpoint-create --project your-project \
+    -d sumologic -t rsyslog \
+    -c server=syslog.collection.YOUR_DEPLOYMENT.sumologic.com -c port=6514 \
+    -c tls=true -c format=custom \
+    -c logline='<%pri%>%protocol-version% %timestamp:::date-rfc3339% %HOSTNAME% %app-name% %procid% %msgid% YOUR_TOKEN %msg%'
+```
+
+Replace `YOUR_TOKEN` with your Sumo Logic collector token.
+
+See [Cloud Syslog Source](https://help.sumologic.com/03Send-Data/Sources/02Sources-for-Hosted-Collectors/Cloud-Syslog-Source) for more information.
+
+## Syslog format reference
+
+### RFC3164 (BSD Syslog)
+
+The older BSD syslog format:
+- Limited structure
+- No standardized timestamp format
+- Simpler message format
+- Used by legacy systems
+
+### RFC5424 (Current Syslog)
+
+The current syslog protocol standard:
+- Structured data support
+- Standardized timestamp format (RFC3339)
+- Better international character support
+- Recommended for new integrations
+
+### Custom format
+
+Allows full control over the log line template:
+- Use rsyslog-style tags: `%tag%`
+- Combine with JSON or other formats
+- Required for some third-party platforms
+- Most flexible option
+
+## Troubleshooting
+
+### Logs not appearing
+
+- Verify the remote server address and port are correct
+- Check that TLS is enabled if required by the remote server
+- Confirm the log format matches the server's expectations
+- Review any custom logline template for syntax errors
+- Ensure the integration is enabled on your service
+
+### Connection failures
+
+- Verify network connectivity to the remote server
+- Check firewall rules allow outbound connections on the specified port
+- Confirm the remote server is accepting connections
+- Review CA certificate if using custom or self-signed certificates
+
+### Authentication errors
+
+- Verify API keys or tokens are correct and active
+- Check that client certificates and keys are in PEM format
+- Confirm the remote server is configured for client authentication
+- Review credential permissions on the remote platform
+
+### Message format issues
+
+- Ensure the format parameter matches server expectations
+- Verify custom logline templates use valid tags
+- Check that special characters are properly escaped
+- Review max_message_size if logs are being truncated
+
+## Related resources
+
+- [Send logs to Datadog](/integrations/datadog#datadog-logs-integration)
+- [Service integrations overview](/integrations/overview)
+- [Aiven CLI reference](/docs/tools/cli)
+- [OpenSearch log integration](/docs/products/opensearch/howto/opensearch-log-integration)
+
+---
+
+*The Loggly trademark is the exclusive property of SolarWinds Worldwide, LLC or its affiliates, is registered with the U.S. Patent and Trademark Office, and may be registered or pending registration in other countries. All other SolarWinds trademarks, service marks, and logos may be common law marks or are registered or pending registration.*

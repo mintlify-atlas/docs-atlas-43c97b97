@@ -1,0 +1,487 @@
+---
+title: Project Management
+description: Manage Aiven projects via the REST API
+---
+
+Projects help you organize your Aiven services and centrally configure settings. Use these endpoints to create, list, update, and delete projects.
+
+## List projects
+
+Retrieve all projects you have access to across your organizations.
+
+```http
+GET /v1/project
+```
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+response = requests.get(
+    "https://api.aiven.io/v1/project",
+    headers=headers
+)
+
+projects = response.json()
+for project in projects["projects"]:
+    print(f"{project['project_name']}: {project['cloud_name']}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aiven.io/v1/project', {
+  headers: {
+    'Authorization': 'aivenv1 YOUR_TOKEN'
+  }
+});
+
+const data = await response.json();
+console.log(data.projects);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="projects" type="array">
+  List of project objects
+  
+  <Expandable>
+    <ResponseField name="project_name" type="string">
+      Name of the project
+    </ResponseField>
+    
+    <ResponseField name="account_id" type="string">
+      Account identifier
+    </ResponseField>
+    
+    <ResponseField name="account_name" type="string">
+      Account name
+    </ResponseField>
+    
+    <ResponseField name="default_cloud" type="string">
+      Default cloud region for new services (e.g., `google-europe-west3`)
+    </ResponseField>
+    
+    <ResponseField name="billing_currency" type="string">
+      Currency code (e.g., `USD`, `EUR`)
+    </ResponseField>
+    
+    <ResponseField name="billing_group_id" type="string">
+      Billing group identifier
+    </ResponseField>
+    
+    <ResponseField name="billing_group_name" type="string">
+      Billing group name
+    </ResponseField>
+    
+    <ResponseField name="estimated_balance" type="string">
+      Current estimated balance
+    </ResponseField>
+    
+    <ResponseField name="payment_method" type="string">
+      Payment method type
+    </ResponseField>
+    
+    <ResponseField name="available_credits" type="string">
+      Available credits amount
+    </ResponseField>
+    
+    <ResponseField name="country_code" type="string">
+      Two-letter country code
+    </ResponseField>
+    
+    <ResponseField name="vat_id" type="string">
+      VAT identification number
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="project_membership" type="object">
+  Map of project names to member roles
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "project_membership": {
+    "my-project": "admin",
+    "demo-project": "developer"
+  },
+  "projects": [
+    {
+      "account_id": "a225dad8d3c4",
+      "account_name": "My Organization",
+      "available_credits": "0.00",
+      "billing_currency": "USD",
+      "billing_group_id": "588a8e63-fda7-4ff7-9bff-577debfee604",
+      "billing_group_name": "Default Billing Group",
+      "default_cloud": "google-europe-west3",
+      "estimated_balance": "4.11",
+      "payment_method": "card",
+      "project_name": "my-project",
+      "country_code": "US",
+      "vat_id": ""
+    }
+  ]
+}
+```
+
+## Get project details
+
+Retrieve detailed information about a specific project.
+
+```http
+GET /v1/project/{project}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project_name = "my-project"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project_name}",
+    headers=headers
+)
+
+project = response.json()["project"]
+print(f"Project: {project['project_name']}")
+print(f"Cloud: {project['default_cloud']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="project" type="object">
+  Project details (same structure as list projects response)
+</ResponseField>
+
+## Create project
+
+Create a new project in your organization.
+
+```http
+POST /v1/project
+```
+
+### Request body
+
+<ParamField body="project" type="string" required>
+  Name for the new project (3-63 characters, lowercase letters, numbers, and hyphens)
+</ParamField>
+
+<ParamField body="account_id" type="string">
+  Account/organization ID to create the project in
+</ParamField>
+
+<ParamField body="billing_group_id" type="string">
+  Billing group ID to assign to the project
+</ParamField>
+
+<ParamField body="cloud" type="string">
+  Default cloud region for services (e.g., `google-europe-west3`)
+</ParamField>
+
+<ParamField body="copy_from_project" type="string">
+  Copy settings from an existing project
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.aiven.io/v1/project" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project": "new-project",
+    "cloud": "google-europe-west3",
+    "billing_group_id": "588a8e63-fda7-4ff7-9bff-577debfee604"
+  }'
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "project": "new-project",
+    "cloud": "google-europe-west3",
+    "billing_group_id": "588a8e63-fda7-4ff7-9bff-577debfee604"
+}
+
+response = requests.post(
+    "https://api.aiven.io/v1/project",
+    headers=headers,
+    json=data
+)
+
+project = response.json()["project"]
+print(f"Created project: {project['project_name']}")
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.aiven.io/v1/project', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'aivenv1 YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    project: 'new-project',
+    cloud: 'google-europe-west3',
+    billing_group_id: '588a8e63-fda7-4ff7-9bff-577debfee604'
+  })
+});
+
+const data = await response.json();
+console.log('Created project:', data.project.project_name);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="project" type="object">
+  The newly created project object
+</ResponseField>
+
+## Update project
+
+Update project settings.
+
+```http
+PUT /v1/project/{project}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+### Request body
+
+<ParamField body="account_id" type="string">
+  Move project to a different account/organization
+</ParamField>
+
+<ParamField body="billing_group_id" type="string">
+  Change billing group
+</ParamField>
+
+<ParamField body="cloud" type="string">
+  Update default cloud region
+</ParamField>
+
+<ParamField body="billing_address" type="string">
+  Billing address
+</ParamField>
+
+<ParamField body="billing_currency" type="string">
+  Billing currency code
+</ParamField>
+
+<ParamField body="billing_emails" type="array">
+  Email addresses for billing notifications
+</ParamField>
+
+<ParamField body="tech_emails" type="array">
+  Email addresses for technical notifications
+</ParamField>
+
+<ParamField body="country_code" type="string">
+  Two-letter country code
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X PUT "https://api.aiven.io/v1/project/my-project" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cloud": "aws-eu-west-1",
+    "tech_emails": ["devops@example.com"]
+  }'
+```
+
+```python Python
+import requests
+
+project_name = "my-project"
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "cloud": "aws-eu-west-1",
+    "tech_emails": ["devops@example.com"]
+}
+
+response = requests.put(
+    f"https://api.aiven.io/v1/project/{project_name}",
+    headers=headers,
+    json=data
+)
+
+print(f"Updated project: {response.json()['project']['project_name']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="project" type="object">
+  The updated project object
+</ResponseField>
+
+## Delete project
+
+Delete a project. All services in the project must be deleted first.
+
+```http
+DELETE /v1/project/{project}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<Warning>
+This operation is irreversible. All project data and configuration will be permanently deleted.
+</Warning>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.aiven.io/v1/project/my-project" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project_name = "my-project"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.delete(
+    f"https://api.aiven.io/v1/project/{project_name}",
+    headers=headers
+)
+
+if response.status_code == 200:
+    print(f"Project {project_name} deleted successfully")
+```
+</CodeGroup>
+
+### Response
+
+Returns 200 OK with an empty response body on success.
+
+## List cloud regions
+
+Get a list of available cloud regions. This endpoint does not require authentication.
+
+```http
+GET /v1/clouds
+```
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/clouds"
+```
+
+```python Python
+import requests
+
+response = requests.get("https://api.aiven.io/v1/clouds")
+clouds = response.json()["clouds"]
+
+for cloud in clouds:
+    print(f"{cloud['cloud_name']}: {cloud['cloud_description']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="clouds" type="array">
+  List of available cloud regions
+  
+  <Expandable>
+    <ResponseField name="cloud_name" type="string">
+      Cloud region identifier (e.g., `google-europe-west3`)
+    </ResponseField>
+    
+    <ResponseField name="cloud_description" type="string">
+      Human-readable description
+    </ResponseField>
+    
+    <ResponseField name="geo_latitude" type="number">
+      Geographic latitude
+    </ResponseField>
+    
+    <ResponseField name="geo_longitude" type="number">
+      Geographic longitude
+    </ResponseField>
+    
+    <ResponseField name="geo_region" type="string">
+      Geographic region (e.g., `europe`, `north-america`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "clouds": [
+    {
+      "cloud_description": "Europe, Finland - Google Cloud: Finland",
+      "cloud_name": "google-europe-north1",
+      "geo_latitude": 60.5693,
+      "geo_longitude": 27.1878,
+      "geo_region": "europe"
+    },
+    {
+      "cloud_description": "Europe, Belgium - Google Cloud: Belgium",
+      "cloud_name": "google-europe-west1",
+      "geo_latitude": 50.4501,
+      "geo_longitude": 3.8196,
+      "geo_region": "europe"
+    }
+  ]
+}
+```
+
+## Related resources
+
+- [Manage projects in Console](/docs/platform/howto/manage-project)
+- [Services API](/api-reference/services)
+- [Full API reference](https://api.aiven.io/doc/)

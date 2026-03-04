@@ -1,0 +1,483 @@
+---
+title: Aiven MCP Server
+description: Access Aiven documentation from MCP-compatible AI clients like Claude, Cursor, VS Code Copilot, and ChatGPT.
+---
+
+The Aiven Model Context Protocol (MCP) server enables AI-powered tools to access Aiven documentation directly. Connect your favorite AI coding assistant to get contextual help about Aiven services, APIs, and best practices while you work.
+
+## What is MCP?
+
+The Model Context Protocol is an open standard that allows AI applications to securely access external data sources and tools. The Aiven MCP server provides:
+
+- **Real-time documentation access**: Query the latest Aiven documentation
+- **Contextual answers**: Get relevant answers about Aiven services
+- **Code examples**: Access integration examples and code snippets
+- **Best practices**: Learn recommended patterns and configurations
+
+## Supported clients
+
+The Aiven MCP server works with these AI tools:
+
+<CardGroup cols={2}>
+  <Card title="Cursor" icon="arrow-pointer" href="#cursor">
+    AI-powered code editor
+  </Card>
+  
+  <Card title="Claude Code" icon="robot" href="#claude-code">
+    Command-line AI assistant
+  </Card>
+  
+  <Card title="Claude Desktop" icon="desktop" href="#claude-desktop">
+    Desktop AI application
+  </Card>
+  
+  <Card title="VS Code" icon="code" href="#vs-code">
+    With GitHub Copilot
+  </Card>
+  
+  <Card title="ChatGPT" icon="comments" href="#chatgpt-web">
+    Web-based AI chat
+  </Card>
+  
+  <Card title="Other clients" icon="ellipsis" href="#other-clients">
+    Any MCP-compatible client
+  </Card>
+</CardGroup>
+
+## Server URL
+
+Use this URL when configuring your MCP client:
+
+```
+https://aiven-docs.mcp.kapa.ai
+```
+
+## Prerequisites
+
+- An MCP-compatible client (see supported clients above)
+- A Google account for authentication (required by some clients)
+
+## Setup guides
+
+### Cursor
+
+Configure Cursor to access Aiven documentation:
+
+<Steps>
+  <Step title="Create MCP configuration">
+    In your project root, create or edit `.cursor/mcp.json`:
+    
+    ```json .cursor/mcp.json
+    {
+      "mcpServers": {
+        "aiven": {
+          "type": "http",
+          "url": "https://aiven-docs.mcp.kapa.ai"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Restart Cursor">
+    Close and reopen Cursor for the configuration to take effect
+  </Step>
+  
+  <Step title="Connect to the server">
+    1. Open **Settings** > **Tools & MCP**
+    2. Find **aiven** in the list
+    3. Click **Connect**
+    4. Sign in with your Google account when prompted
+  </Step>
+  
+  <Step title="Verify connection">
+    Ask the Cursor AI: "How do I create a Kafka topic in Aiven?"
+    
+    If the response references Aiven documentation, you're connected!
+  </Step>
+</Steps>
+
+[Learn more about Cursor MCP](https://cursor.com/docs/context/mcp)
+
+### Claude Code
+
+Add Aiven documentation to Claude's command-line interface:
+
+<Steps>
+  <Step title="Install the server">
+    Run this command in your terminal:
+    
+    ```bash
+    claude mcp add --transport http aiven-docs https://aiven-docs.mcp.kapa.ai
+    ```
+  </Step>
+  
+  <Step title="Authenticate">
+    Sign in with your Google account when prompted
+  </Step>
+  
+  <Step title="Verify installation">
+    ```bash
+    claude mcp
+    ```
+    
+    You should see `aiven-docs` in the list of registered servers
+  </Step>
+  
+  <Step title="Test it out">
+    Ask Claude: "Explain how to use the Aiven CLI to create a PostgreSQL service"
+  </Step>
+</Steps>
+
+[Learn more about Claude Code MCP](https://docs.anthropic.com/en/docs/claude-code/tutorials/set-up-mcp)
+
+### Claude Desktop
+
+Connect Aiven documentation to Claude Desktop app:
+
+<Steps>
+  <Step title="Locate configuration file">
+    Open the Claude Desktop configuration file:
+    
+    <Tabs>
+      <Tab title="macOS">
+        ```bash
+        ~/Library/Application Support/Claude/claude_desktop_config.json
+        ```
+        
+        Create the file if it doesn't exist:
+        ```bash
+        mkdir -p ~/Library/Application\ Support/Claude
+        touch ~/Library/Application\ Support/Claude/claude_desktop_config.json
+        ```
+      </Tab>
+      
+      <Tab title="Windows">
+        ```
+        %APPDATA%\Claude\claude_desktop_config.json
+        ```
+        
+        Create the file if it doesn't exist:
+        ```powershell
+        New-Item -ItemType Directory -Force -Path "$env:APPDATA\Claude"
+        New-Item -ItemType File -Force -Path "$env:APPDATA\Claude\claude_desktop_config.json"
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Add configuration">
+    Edit the file and add:
+    
+    ```json claude_desktop_config.json
+    {
+      "mcpServers": {
+        "aiven": {
+          "type": "http",
+          "url": "https://aiven-docs.mcp.kapa.ai"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Restart Claude Desktop">
+    Quit and reopen the Claude Desktop application
+  </Step>
+  
+  <Step title="Authenticate">
+    Sign in with your Google account when prompted
+  </Step>
+  
+  <Step title="Test the connection">
+    Ask: "How do I configure VPC peering for Aiven services?"
+  </Step>
+</Steps>
+
+[Learn more about Claude Desktop MCP](https://modelcontextprotocol.io/quickstart/user)
+
+### VS Code
+
+Use Aiven documentation with GitHub Copilot in Visual Studio Code:
+
+<Note>
+Requires Visual Studio Code 1.102 or later with GitHub Copilot extension installed.
+</Note>
+
+<Steps>
+  <Step title="Create MCP configuration">
+    In your workspace root, create `.vscode/mcp.json`:
+    
+    ```json .vscode/mcp.json
+    {
+      "servers": {
+        "aiven": {
+          "type": "http",
+          "url": "https://aiven-docs.mcp.kapa.ai"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Reload VS Code">
+    Reload the window: **Ctrl+Shift+P** (or **Cmd+Shift+P** on macOS) → **Developer: Reload Window**
+  </Step>
+  
+  <Step title="Verify server">
+    Open Command Palette and run **MCP: List Servers**
+    
+    Confirm **aiven** appears in the list
+  </Step>
+  
+  <Step title="Authenticate">
+    Sign in with your Google account when prompted
+  </Step>
+  
+  <Step title="Use with Copilot">
+    In Copilot Chat, ask: "Show me how to create an Aiven for PostgreSQL service using Terraform"
+  </Step>
+</Steps>
+
+[Learn more about VS Code MCP](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)
+
+### ChatGPT (Web)
+
+Add Aiven documentation access to ChatGPT:
+
+<Note>
+ChatGPT UI may change. Refer to [OpenAI's documentation](https://developers.openai.com/api/docs/guides/developer-mode) if steps don't match.
+</Note>
+
+<Steps>
+  <Step title="Enable developer mode">
+    1. Open [ChatGPT](https://chat.openai.com)
+    2. Click **Settings**
+    3. Go to **Apps** → **Advanced settings**
+    4. Enable **Developer mode**
+  </Step>
+  
+  <Step title="Create MCP app">
+    1. Go to **Apps** → **Create app**
+    2. Enter details:
+       - **Name**: Aiven
+       - **Description**: Aiven documentation MCP server
+       - **MCP Server URL**: `https://aiven-docs.mcp.kapa.ai`
+    3. Click **Create**
+  </Step>
+  
+  <Step title="Authenticate">
+    Sign in with your Google account when prompted
+  </Step>
+  
+  <Step title="Verify setup">
+    Check that **Aiven** appears under **Settings** → **Apps**
+  </Step>
+  
+  <Step title="Start using">
+    In a new chat, ask: "How do I set up Apache Kafka ACLs on Aiven?"
+  </Step>
+</Steps>
+
+[Learn more about OpenAI Developer Mode](https://developers.openai.com/api/docs/guides/developer-mode)
+
+### Other clients
+
+For other MCP-compatible clients:
+
+<Steps>
+  <Step title="Find configuration location">
+    Check your client's documentation for MCP server configuration
+  </Step>
+  
+  <Step title="Add server configuration">
+    Most clients accept a configuration similar to:
+    
+    ```json
+    {
+      "mcpServers": {
+        "aiven": {
+          "url": "https://aiven-docs.mcp.kapa.ai"
+        }
+      }
+    }
+    ```
+    
+    Some clients require specifying the transport type:
+    
+    ```json
+    {
+      "mcpServers": {
+        "aiven": {
+          "type": "http",
+          "url": "https://aiven-docs.mcp.kapa.ai"
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Restart your client">
+    Restart the application for changes to take effect
+  </Step>
+  
+  <Step title="Authenticate">
+    Sign in with your Google account if prompted
+  </Step>
+</Steps>
+
+## Using the MCP server
+
+Once connected, you can ask your AI assistant questions about Aiven:
+
+### Example questions
+
+<CodeGroup>
+```text Getting started
+How do I create my first Aiven for PostgreSQL service?
+What are the steps to set up a Kafka cluster on Aiven?
+How do I connect to an Aiven service from my application?
+```
+
+```text Configuration
+How do I configure VPC peering for Aiven services?
+What are the best practices for Kafka topic configuration?
+How do I enable connection pooling for PostgreSQL?
+```
+
+```text API and automation
+Show me how to create a service using the Aiven API
+How do I use the Aiven Terraform provider?
+What CLI commands create a Kafka topic?
+```
+
+```text Troubleshooting
+Why is my service connection failing?
+How do I check service logs in Aiven?
+What metrics should I monitor for Kafka?
+```
+</CodeGroup>
+
+### Example conversation
+
+**You**: How do I create an Apache Kafka topic using the Aiven CLI?
+
+**AI**: Based on the Aiven documentation, you can create a Kafka topic using the `avn` CLI:
+
+```bash
+avn service topic-create my-kafka \
+  my-topic \
+  --partitions 3 \
+  --replication 2 \
+  --retention 72h
+```
+
+This creates a topic named `my-topic` on the service `my-kafka` with:
+- 3 partitions
+- Replication factor of 2
+- 72-hour retention period
+
+You can list all topics with:
+
+```bash
+avn service topic-list my-kafka
+```
+
+For more details, see the [Aiven CLI documentation](/tools/cli).
+
+## Enabling tool execution
+
+Some clients require permission to execute MCP tools:
+
+1. When prompted "Allow tool execution?", click **Allow**
+2. This grants the AI permission to query Aiven documentation
+3. You'll only need to approve once per session
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Server not appearing in client">
+    **Solutions:**
+    
+    - Verify the configuration file path is correct
+    - Check JSON syntax (use a JSON validator)
+    - Ensure the file is saved
+    - Restart your client application
+    - Check client logs for errors
+  </Accordion>
+  
+  <Accordion title="Authentication fails">
+    **Solutions:**
+    
+    - Ensure you're using a Google account
+    - Check your internet connection
+    - Try clearing browser/client cache
+    - Use an incognito/private window
+    - Check if corporate firewall blocks authentication
+  </Accordion>
+  
+  <Accordion title="AI doesn't use Aiven docs">
+    **Solutions:**
+    
+    - Explicitly mention Aiven in your questions
+    - Try: "According to Aiven documentation, how do I..."
+    - Verify the server is connected (check client settings)
+    - Enable tool execution when prompted
+    - Check if the client shows MCP server status
+  </Accordion>
+  
+  <Accordion title="Outdated information">
+    The MCP server uses the latest published Aiven documentation. If information seems outdated:
+    
+    - Verify you're asking about current features
+    - Check the [Aiven Documentation](https://aiven.io/docs) directly
+    - Report issues to Aiven support
+  </Accordion>
+</AccordionGroup>
+
+## Privacy and security
+
+<Info>
+**How your data is handled:**
+
+- Questions are sent to the MCP server for documentation lookup
+- No code or proprietary data is required
+- Authentication uses Google OAuth (handled by Google)
+- The server retrieves public Aiven documentation only
+- No conversation history is stored permanently
+
+See [Aiven's privacy policy](https://aiven.io/privacy) and [Kapa's privacy policy](https://docs.kapa.ai/privacy) for details.
+</Info>
+
+## MCP server provider
+
+The Aiven MCP server is hosted by [Kapa.ai](https://kapa.ai), a platform for AI-powered documentation access. Kapa provides:
+
+- **Reliable hosting**: High-availability MCP server infrastructure
+- **Real-time sync**: Automatic updates from Aiven documentation
+- **Security**: OAuth authentication and encrypted communication
+- **Performance**: Fast response times for documentation queries
+
+Learn more about [Kapa's MCP integration](https://docs.kapa.ai/integrations/mcp/overview).
+
+## Limitations
+
+<Warning>
+**Current limitations:**
+
+- Only accesses public Aiven documentation
+- Cannot access your specific Aiven account or services
+- No real-time service status information
+- Cannot execute commands or make changes
+- Requires internet connection
+- Google account required for authentication
+</Warning>
+
+For account-specific help, use the [Aiven Console](https://console.aiven.io) or contact [Aiven Support](https://aiven.io/support).
+
+## Related resources
+
+- [Model Context Protocol Specification](https://modelcontextprotocol.io)
+- [Aiven Documentation](https://aiven.io/docs)
+- [Kapa.ai MCP Documentation](https://docs.kapa.ai/integrations/mcp/overview)
+- [MCP Client List](https://modelcontextprotocol.io/clients)

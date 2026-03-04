@@ -1,0 +1,667 @@
+---
+title: Aiven Operator for Kubernetes
+description: Manage Aiven services directly within your Kubernetes clusters using the Aiven Kubernetes Operator.
+---
+
+The [Aiven Operator for Kubernetes](https://github.com/aiven/aiven-operator) enables you to manage Aiven infrastructure using Kubernetes Custom Resource Definitions (CRDs). This brings Aiven services into your Kubernetes workflow, allowing you to define and manage them alongside your application deployments.
+
+## Why use the Kubernetes Operator
+
+<CardGroup cols={2}>
+  <Card title="Native Kubernetes integration" icon="dharmachakra">
+    Manage Aiven services using kubectl and standard Kubernetes workflows
+  </Card>
+  
+  <Card title="GitOps compatible" icon="code-branch">
+    Define services in YAML and manage them through version control
+  </Card>
+  
+  <Card title="Automatic secret management" icon="key">
+    Connection credentials stored as Kubernetes Secrets
+  </Card>
+  
+  <Card title="Declarative configuration" icon="file-code">
+    Define desired state; the operator handles the rest
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+- [Aiven account](https://console.aiven.io/signup)
+- Kubernetes cluster (version 1.21 or later) with admin access
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
+- [Helm](https://helm.sh/docs/intro/install/) 3.x installed
+- [Authentication token](/tools/console) from Aiven Console
+
+## Installation
+
+<Steps>
+  <Step title="Create authentication token">
+    Generate a token from the [Aiven Console](https://console.aiven.io) under **User Profile** > **Tokens**
+  </Step>
+  
+  <Step title="Create Kubernetes Secret">
+    Store your token as a Kubernetes Secret:
+    
+    ```bash
+    kubectl create namespace aiven-system
+    
+    kubectl create secret generic aiven-token \
+      --from-literal=token="YOUR_TOKEN_HERE" \
+      --namespace aiven-system
+    ```
+  </Step>
+  
+  <Step title="Add Helm repository">
+    ```bash
+    helm repo add aiven https://aiven.github.io/aiven-operator
+    helm repo update
+    ```
+  </Step>
+  
+  <Step title="Install the operator">
+    ```bash
+    helm install aiven-operator aiven/aiven-operator \
+      --namespace aiven-system \
+      --create-namespace
+    ```
+  </Step>
+  
+  <Step title="Verify installation">
+    ```bash
+    kubectl get pods -n aiven-system
+    ```
+    
+    You should see the operator pod running:
+    ```
+    NAME                              READY   STATUS    RESTARTS   AGE
+    aiven-operator-xxxxxxxxxx-xxxxx   1/1     Running   0          1m
+    ```
+  </Step>
+</Steps>
+
+## Quick start: Deploy PostgreSQL
+
+Create an Aiven for PostgreSQL service using the operator:
+
+<Steps>
+  <Step title="Create service definition">
+    Create a file named `postgres.yaml`:
+    
+    ```yaml postgres.yaml
+    apiVersion: aiven.io/v1alpha1
+    kind: PostgreSQL
+    metadata:
+      name: pg-sample
+    spec:
+      # Authentication token reference
+      authSecretRef:
+        name: aiven-token
+        key: token
+      
+      # Connection info output
+      connInfoSecretTarget:
+        name: pg-connection
+      
+      # Aiven project
+      project: my-aiven-project
+      
+      # Cloud and plan
+      cloudName: google-europe-north1
+      plan: startup-4
+      
+      # Maintenance window
+      maintenanceWindowDow: sunday
+      maintenanceWindowTime: "10:00:00"
+      
+      # PostgreSQL configuration
+      userConfig:
+        pg_version: '16'
+        public_access:
+          pg: true
+    ```
+  </Step>
+  
+  <Step title="Apply the resource">
+    ```bash
+    kubectl apply -f postgres.yaml
+    ```
+  </Step>
+  
+  <Step title="Check service status">
+    ```bash
+    kubectl get postgresqls.aiven.io pg-sample
+    ```
+    
+    Wait for the `STATE` to become `RUNNING`:
+    ```
+    NAME        PROJECT           PLAN        STATE
+    pg-sample   my-aiven-project  startup-4   RUNNING
+    ```
+  </Step>
+  
+  <Step title="Get connection information">
+    The operator automatically creates a Secret with connection details:
+    
+    ```bash
+    kubectl get secret pg-connection -o yaml
+    ```
+  </Step>
+</Steps>
+
+## Using the service from a pod
+
+Connect to your Aiven service from within Kubernetes:
+
+```yaml pod-example.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres-client
+spec:
+  restartPolicy: Never
+  containers:
+    - name: postgres
+      image: postgres:16-alpine
+      command: ['psql', '$(DATABASE_URI)', '-c', 'SELECT version();']
+      
+      # Inject connection info as environment variables
+      envFrom:
+        - secretRef:
+            name: pg-connection
+```
+
+Apply and check logs:
+
+```bash
+kubectl apply -f pod-example.yaml
+kubectl logs postgres-client
+```
+
+## Service examples
+
+### Apache Kafka
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: Kafka
+metadata:
+  name: kafka-sample
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: kafka-connection
+  
+  project: my-aiven-project
+  cloudName: google-europe-north1
+  plan: business-4
+  
+  userConfig:
+    kafka_version: '3.6'
+    kafka:
+      auto_create_topics_enable: true
+      num_partitions: 3
+      default_replication_factor: 2
+```
+
+### Kafka Topic
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: KafkaTopic
+metadata:
+  name: orders-topic
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  project: my-aiven-project
+  serviceName: kafka-sample
+  
+  topicName: orders
+  partitions: 3
+  replication: 2
+  
+  config:
+    retention_ms: 604800000  # 7 days
+    compression_type: gzip
+```
+
+### MySQL
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: MySQL
+metadata:
+  name: mysql-sample
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: mysql-connection
+  
+  project: my-aiven-project
+  cloudName: aws-us-east-1
+  plan: business-4
+  
+  userConfig:
+    mysql_version: '8'
+    public_access:
+      mysql: true
+```
+
+### OpenSearch
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: OpenSearch
+metadata:
+  name: opensearch-sample
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: opensearch-connection
+  
+  project: my-aiven-project
+  cloudName: azure-eastus
+  plan: business-4
+  
+  userConfig:
+    opensearch_version: '2'
+    public_access:
+      opensearch: true
+```
+
+### Redis
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: Redis
+metadata:
+  name: redis-sample
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: redis-connection
+  
+  project: my-aiven-project
+  cloudName: google-us-central1
+  plan: startup-4
+  
+  userConfig:
+    redis_maxmemory_policy: allkeys-lru
+    public_access:
+      redis: true
+```
+
+## Project management
+
+Create and manage Aiven projects:
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: Project
+metadata:
+  name: my-project
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  # Project will be named 'dev-environment' in Aiven
+  project: dev-environment
+  
+  # Billing group (optional)
+  billingGroupId: "your-billing-group-id"
+  
+  # Project VPC (optional)
+  cloudName: google-europe-north1
+  
+  tags:
+    environment: development
+    team: platform
+```
+
+## Service integrations
+
+Integrate services together:
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: ServiceIntegration
+metadata:
+  name: postgres-to-influx
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  project: my-aiven-project
+  integrationType: metrics
+  sourceServiceName: pg-sample
+  destinationServiceName: influxdb-sample
+```
+
+## Advanced configurations
+
+### VPC
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: ProjectVPC
+metadata:
+  name: my-vpc
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  project: my-aiven-project
+  cloudName: google-europe-north1
+  networkCidr: 10.0.0.0/24
+```
+
+Use VPC in a service:
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: PostgreSQL
+metadata:
+  name: pg-in-vpc
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: pg-vpc-connection
+  
+  project: my-aiven-project
+  cloudName: google-europe-north1
+  plan: startup-4
+  
+  # Reference VPC
+  projectVPCRef:
+    name: my-vpc
+  
+  userConfig:
+    pg_version: '16'
+```
+
+### Connection pooling
+
+```yaml
+apiVersion: aiven.io/v1alpha1
+kind: ConnectionPool
+metadata:
+  name: pg-pool
+spec:
+  authSecretRef:
+    name: aiven-token
+    key: token
+  
+  connInfoSecretTarget:
+    name: pg-pool-connection
+  
+  project: my-aiven-project
+  serviceName: pg-sample
+  databaseName: defaultdb
+  username: avnadmin
+  poolName: app-pool
+  poolSize: 25
+  poolMode: transaction
+```
+
+## Managing secrets
+
+### Connection information
+
+The operator creates Kubernetes Secrets containing:
+
+<Tabs>
+  <Tab title="PostgreSQL">
+    ```yaml
+    DATABASE_URI: postgres://user:pass@host:port/db
+    PGHOST: hostname
+    PGPORT: port
+    PGDATABASE: database
+    PGUSER: username
+    PGPASSWORD: password
+    PGSSLMODE: require
+    ```
+  </Tab>
+  
+  <Tab title="Kafka">
+    ```yaml
+    HOST: hostname
+    PORT: port
+    ACCESS_CERT: certificate
+    ACCESS_KEY: private key
+    CA_CERT: ca certificate
+    ```
+  </Tab>
+  
+  <Tab title="MySQL">
+    ```yaml
+    HOST: hostname
+    PORT: port
+    DATABASE: database
+    USER: username
+    PASSWORD: password
+    MYSQL_URI: mysql://user:pass@host:port/db
+    ```
+  </Tab>
+</Tabs>
+
+### Using secrets in deployments
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: app
+          image: my-app:latest
+          
+          # Inject all connection info
+          envFrom:
+            - secretRef:
+                name: pg-connection
+          
+          # Or select specific keys
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyFor:
+                  name: pg-connection
+                  key: PGHOST
+```
+
+## Monitoring and troubleshooting
+
+### Check operator logs
+
+```bash
+kubectl logs -n aiven-system -l app.kubernetes.io/name=aiven-operator
+```
+
+### Check resource status
+
+```bash
+# List all Aiven resources
+kubectl get aiven --all-namespaces
+
+# Get detailed information
+kubectl describe postgresql pg-sample
+
+# Check events
+kubectl get events --sort-by='.lastTimestamp'
+```
+
+### Common issues
+
+<AccordionGroup>
+  <Accordion title="Service stuck in REBUILDING">
+    Check the service status in Aiven Console or increase the timeout:
+    
+    ```bash
+    kubectl describe postgresql pg-sample
+    ```
+    
+    Look for error messages in the status conditions.
+  </Accordion>
+  
+  <Accordion title="Authentication errors">
+    Verify the token is correct and has necessary permissions:
+    
+    ```bash
+    kubectl get secret aiven-token -o jsonpath='{.data.token}' | base64 -d
+    ```
+  </Accordion>
+  
+  <Accordion title="Resource not updating">
+    Delete and recreate the resource:
+    
+    ```bash
+    kubectl delete postgresql pg-sample
+    kubectl apply -f postgres.yaml
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Clean up
+
+Remove resources:
+
+<Steps>
+  <Step title="Delete services">
+    ```bash
+    kubectl delete postgresql pg-sample
+    kubectl delete kafka kafka-sample
+    ```
+    
+    This also deletes the services in Aiven
+  </Step>
+  
+  <Step title="Uninstall operator">
+    ```bash
+    helm uninstall aiven-operator -n aiven-system
+    ```
+  </Step>
+  
+  <Step title="Remove namespace">
+    ```bash
+    kubectl delete namespace aiven-system
+    ```
+  </Step>
+</Steps>
+
+## GitOps with ArgoCD
+
+Example ArgoCD Application:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aiven-services
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/myorg/aiven-services
+    targetRevision: main
+    path: services
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Use separate namespaces">
+    Organize services by environment:
+    
+    ```bash
+    kubectl create namespace production
+    kubectl create namespace staging
+    
+    kubectl apply -f postgres.yaml -n production
+    kubectl apply -f postgres-staging.yaml -n staging
+    ```
+  </Accordion>
+  
+  <Accordion title="Secure token storage">
+    Use external secret managers:
+    
+    ```yaml
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: aiven-token
+    spec:
+      secretStoreRef:
+        name: vault
+        kind: SecretStore
+      target:
+        name: aiven-token
+      data:
+        - secretKey: token
+          remoteRef:
+            key: aiven/token
+    ```
+  </Accordion>
+  
+  <Accordion title="Resource naming conventions">
+    Use consistent naming:
+    
+    ```yaml
+    metadata:
+      name: app-postgres-prod
+      labels:
+        app: myapp
+        component: database
+        environment: production
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related resources
+
+- [Aiven Operator Documentation](https://aiven.github.io/aiven-operator/)
+- [Aiven Operator GitHub Repository](https://github.com/aiven/aiven-operator)
+- [API Reference](https://aiven.github.io/aiven-operator/api-reference/)
+- [Kubernetes Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)

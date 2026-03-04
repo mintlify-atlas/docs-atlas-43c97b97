@@ -1,0 +1,335 @@
+---
+title: Marketplace Setup
+description: Subscribe to Aiven through AWS, Azure, or Google Cloud marketplace and link your subscription to your Aiven organization
+---
+
+You can subscribe to Aiven through your preferred cloud marketplace and have your Aiven charges billed directly to your cloud provider account. This simplifies procurement and consolidates your cloud spending.
+
+## Benefits of marketplace subscriptions
+
+<CardGroup cols={2}>
+  <Card title="Simplified billing" icon="credit-card">
+    All Aiven charges appear on your existing cloud provider bill
+  </Card>
+  <Card title="Use existing commitments" icon="handshake">
+    Apply cloud provider credits and commitments to Aiven services
+  </Card>
+  <Card title="Streamlined procurement" icon="file-contract">
+    Skip separate vendor approval processes
+  </Card>
+  <Card title="Unified management" icon="chart-line">
+    Track all cloud spending in one place
+  </Card>
+</CardGroup>
+
+<Note>
+  Marketplace subscriptions only set up billing. You won't be charged until you create and run Aiven services.
+</Note>
+
+## Choose your marketplace
+
+Select your cloud provider to get started:
+
+<Tabs>
+  <Tab title="AWS Marketplace">
+    ### Subscribe via AWS Marketplace
+    
+    <Steps>
+      <Step title="Find Aiven on AWS Marketplace">
+        Go to [Aiven Platform on AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-fx7pxfq5uaxha).
+      </Step>
+      
+      <Step title="View purchase options">
+        Click **View purchase options** to see the subscription details.
+        
+        Review the pricing information and terms.
+      </Step>
+      
+      <Step title="Subscribe to Aiven">
+        Click **Subscribe** to create the billing subscription.
+        
+        <Note>
+          This only sets up billing between AWS and Aiven. You won't be charged until you create services.
+        </Note>
+      </Step>
+      
+      <Step title="Set up your account">
+        Click **Set up your account** to continue to the Aiven Console.
+        
+        This redirects you to the AWS-specific Aiven signup page.
+      </Step>
+      
+      <Step title="Register or log in">
+        On the AWS signup page at Aiven:
+        - **New to Aiven?** Register with your email address
+        - **Existing Aiven user?** Log in with your credentials
+      </Step>
+      
+      <Step title="Link your subscription">
+        Choose or create an Aiven organization to link with your AWS subscription.
+        
+        <Tip>
+          If you already have Aiven services in an organization, select that organization to migrate billing to AWS.
+        </Tip>
+      </Step>
+    </Steps>
+    
+    ### Troubleshooting
+    
+    If you encounter issues linking your subscription:
+    
+    1. In the AWS Console, navigate to **AWS Marketplace Subscriptions**
+    2. Find the Aiven subscription
+    3. Click **Set up your account** to retry the linking process
+    
+    ### Login URL
+    
+    <Note>
+      Once set up, always use this URL to access your AWS-linked account:
+      
+      [https://console.aws.aiven.io](https://console.aws.aiven.io)
+    </Note>
+  </Tab>
+  
+  <Tab title="Azure Marketplace">
+    ### Subscribe via Azure Marketplace
+    
+    <Steps>
+      <Step title="Find Aiven on Azure Marketplace">
+        Go to [Aiven Platform on Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/aivenltd1590663507662.aiven_managed_database_services?tab=Overview).
+      </Step>
+      
+      <Step title="Start subscription">
+        Click **Get it now** to begin the subscription process.
+      </Step>
+      
+      <Step title="Choose billing model">
+        Select **Recurring billing** as your billing option.
+        
+        <Note>
+          Recurring billing allows you to pay only for what you use. No upfront commitments required.
+        </Note>
+      </Step>
+      
+      <Step title="Complete subscription details">
+        Fill in the required information:
+        - Subscription name
+        - Resource group
+        - Billing details
+        
+        Review Microsoft's [purchase guidance](https://learn.microsoft.com/en-us/marketplace/purchase-software-appsource) if needed.
+        
+        <Note>
+          You won't be charged at this stage. This only sets up billing between Azure and Aiven.
+        </Note>
+      </Step>
+      
+      <Step title="Configure your account">
+        After completing the Azure subscription, click **Configure account now**.
+        
+        This takes you to the Azure-specific Aiven signup page.
+      </Step>
+      
+      <Step title="Log in to Aiven">
+        On the [Azure signup page at Aiven](https://console.azure.aiven.io/login):
+        - Use the same email address as your Azure console
+        - Create a password if you're a new Aiven user
+        - Log in if you already have an Aiven account
+      </Step>
+      
+      <Step title="Link your organization">
+        Select or create an Aiven organization to link with your Azure subscription.
+      </Step>
+    </Steps>
+    
+    ### Troubleshooting
+    
+    If you encounter issues linking your subscription:
+    
+    1. In the Azure Portal, go to your subscriptions
+    2. Find the Aiven subscription
+    3. Click **Open SaaS Account on publisher's site**
+    4. Complete the linking process
+    
+    ### Login URL
+    
+    <Note>
+      Once set up, always use this URL to access your Azure-linked account:
+      
+      [https://console.azure.aiven.io](https://console.azure.aiven.io)
+    </Note>
+  </Tab>
+  
+  <Tab title="Google Cloud Marketplace">
+    ### Subscribe via Google Cloud Marketplace
+    
+    <Steps>
+      <Step title="Find Aiven on Google Cloud Marketplace">
+        Go to [Aiven Platform on Google Cloud Marketplace](https://console.cloud.google.com/marketplace/product/aiven-public/aiven).
+      </Step>
+      
+      <Step title="Subscribe to Aiven">
+        Click **Subscribe** to start the subscription process.
+      </Step>
+      
+      <Step title="Select billing account">
+        Choose your Google Cloud billing account from the dropdown.
+        
+        Click **Subscribe** to confirm.
+        
+        <Note>
+          You won't be charged at this stage. This only sets up billing between Google Cloud and Aiven.
+        </Note>
+      </Step>
+      
+      <Step title="Go to product page">
+        After subscribing, click **Go to product page**.
+      </Step>
+      
+      <Step title="Manage on provider">
+        Click **Manage on provider** to complete the setup in Aiven Console.
+        
+        This redirects you to the GCP-specific Aiven signup page.
+      </Step>
+      
+      <Step title="Register or log in">
+        On the GCP signup page:
+        - **New to Aiven?** Register with your email address
+        - **Existing Aiven user?** Log in with your credentials
+      </Step>
+      
+      <Step title="Link your subscription">
+        Choose or create an Aiven organization to link with your Google Cloud subscription.
+      </Step>
+    </Steps>
+    
+    ### Understanding GCP billing
+    
+    Services created through your Google Cloud subscription are billed per hour:
+    
+    - Metering data is sent from Aiven to Google Cloud
+    - View usage in the **Billing** section of Google Cloud Console
+    - The subscription appears as **Use of Aiven**
+    - Usage labels help identify your services:
+      - `container_name`: Your Aiven project name
+      - `resource_name`: Your Aiven service name
+    
+    <Accordion title="Example: Viewing GCP billing details">
+      In Google Cloud Console:
+      
+      1. Navigate to **Billing** → **Reports**
+      2. Filter by **Service**: Use of Aiven
+      3. Add labels to see per-project or per-service costs:
+         - Group by `container_name` to see costs by Aiven project
+         - Group by `resource_name` to see costs by individual service
+    </Accordion>
+    
+    ### Login URL
+    
+    <Note>
+      Once set up, always use this URL to access your GCP-linked account:
+      
+      [https://console.gcp.aiven.io](https://console.gcp.aiven.io)
+    </Note>
+  </Tab>
+</Tabs>
+
+## After subscription setup
+
+Once you've linked your marketplace subscription:
+
+<Steps>
+  <Step title="Verify billing configuration">
+    Log into the Aiven Console using your marketplace-specific URL and verify that your billing is set up correctly.
+    
+    Check the **Billing** section to confirm your marketplace subscription is active.
+  </Step>
+  
+  <Step title="Create your first service">
+    Follow the [quickstart guide](/quickstart) to deploy your first service.
+    
+    All service charges will be billed through your cloud marketplace.
+  </Step>
+  
+  <Step title="Set up your organization">
+    Configure your organization structure, invite team members, and set up projects.
+    
+    See [organizations and projects](/platform/organizations-and-projects) for details.
+  </Step>
+</Steps>
+
+## Managing existing services
+
+If you already have Aiven services with a different payment method:
+
+<Accordion title="Migrate existing services to marketplace billing">
+  You can change the billing for existing services to use your marketplace subscription:
+  
+  1. Link your marketplace subscription to the organization containing your services
+  2. In the Aiven Console, go to **Billing** → **Billing groups**
+  3. Select the billing group containing your services
+  4. Update the payment method to your marketplace subscription
+  
+  Your services will continue running without interruption, and future charges will be billed through the marketplace.
+  
+  For detailed instructions, see the [marketplace payment guide](/platform/howto/list-marketplace-payments).
+</Accordion>
+
+## Marketplace-specific login URLs
+
+<Warning>
+  Always use the correct URL for your marketplace subscription. Using the wrong URL may prevent you from accessing your services.
+</Warning>
+
+| Marketplace | Login URL |
+|-------------|----------|
+| AWS | [console.aws.aiven.io](https://console.aws.aiven.io) |
+| Azure | [console.azure.aiven.io](https://console.azure.aiven.io) |
+| Google Cloud | [console.gcp.aiven.io](https://console.gcp.aiven.io) |
+| Direct signup | [console.aiven.io](https://console.aiven.io) |
+
+## Frequently asked questions
+
+<Accordion title="When will I be charged?">
+  You're charged only after creating and running Aiven services. The marketplace subscription itself has no cost.
+  
+  Billing is hourly based on the services you're running and their configuration (plan size, cloud region, etc.).
+</Accordion>
+
+<Accordion title="Can I use multiple marketplace subscriptions?">
+  Yes, you can have multiple marketplace subscriptions across different organizations. However, each organization can only be linked to one marketplace subscription.
+  
+  If you need to use services from multiple cloud providers, create separate organizations for each marketplace.
+</Accordion>
+
+<Accordion title="Can I switch between marketplaces?">
+  You can change your billing method, but this requires updating your billing group configuration. Contact [support@aiven.io](mailto:support@aiven.io) for assistance with complex billing migrations.
+</Accordion>
+
+<Accordion title="Do marketplace prices differ from direct pricing?">
+  Pricing is consistent across all channels. However, marketplace subscriptions may allow you to use existing cloud credits or commitments, which can reduce your effective cost.
+</Accordion>
+
+<Accordion title="What happens if my marketplace subscription ends?">
+  If your marketplace subscription ends or is cancelled, you'll need to add an alternative payment method to keep your services running. Aiven will notify you before any service interruption.
+</Accordion>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create your first service" icon="rocket" href="/quickstart">
+    Deploy a database or streaming service in minutes
+  </Card>
+  
+  <Card title="Billing and payment" icon="credit-card" href="/platform/billing-and-payment">
+    Learn about billing groups and payment management
+  </Card>
+  
+  <Card title="Organization setup" icon="building" href="/platform/organizations-and-projects">
+    Structure your resources with projects and units
+  </Card>
+  
+  <Card title="View all services" icon="server" href="/services/overview">
+    Explore available managed services
+  </Card>
+</CardGroup>

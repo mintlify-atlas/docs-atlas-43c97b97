@@ -1,0 +1,640 @@
+---
+title: Aiven CLI
+description: Use the Aiven command-line interface to manage services through scriptable commands and automation.
+---
+
+The Aiven command-line interface (CLI) enables you to manage Aiven services and platform resources through terminal commands. The CLI uses the Aiven API and is ideal for scripting, automation, and rapid development workflows.
+
+## Installation
+
+The Aiven CLI (`avn`) is distributed as a Python package and can be installed using pip or Homebrew.
+
+<Tabs>
+  <Tab title="pip">
+    ```bash
+    pip install aiven-client
+    ```
+    
+    For Python 3 specifically:
+    ```bash
+    pip3 install aiven-client
+    ```
+  </Tab>
+  
+  <Tab title="Homebrew (macOS)">
+    ```bash
+    brew install aiven-client
+    ```
+  </Tab>
+  
+  <Tab title="pipx (isolated)">
+    Install in an isolated environment using pipx:
+    ```bash
+    pipx install aiven-client
+    ```
+  </Tab>
+</Tabs>
+
+### Verify installation
+
+Check that the CLI is installed correctly:
+
+```bash
+avn --version
+```
+
+## Authentication
+
+Authenticate with Aiven using your email and password or a personal token.
+
+<Tabs>
+  <Tab title="Password">
+    <Steps>
+      <Step title="Login with email">
+        ```bash
+        avn user login YOUR_EMAIL@example.com
+        ```
+      </Step>
+      
+      <Step title="Enter password">
+        Enter your password when prompted
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Token (recommended)">
+    <Steps>
+      <Step title="Create a token">
+        Generate a token from the [Aiven Console](https://console.aiven.io) under **User Profile** > **Tokens**
+      </Step>
+      
+      <Step title="Login with token">
+        ```bash
+        avn user login YOUR_EMAIL@example.com --token
+        ```
+        
+        Paste your token when prompted
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Marketplace">
+    If you registered through AWS or GCP marketplace, include the `--tenant` flag:
+    
+    ```bash
+    avn user login YOUR_EMAIL@example.com --tenant aws
+    ```
+    
+    Or for GCP:
+    ```bash
+    avn user login YOUR_EMAIL@example.com --tenant google
+    ```
+  </Tab>
+</Tabs>
+
+## Getting started
+
+After authentication, you can start managing your Aiven resources.
+
+### List projects
+
+```bash
+avn project list
+```
+
+### Set default project
+
+```bash
+avn project switch PROJECT_NAME
+```
+
+### List services
+
+```bash
+avn service list
+```
+
+## Common operations
+
+### Service management
+
+#### Create a service
+
+Create a PostgreSQL service:
+
+```bash
+avn service create my-postgres \
+  --service-type pg \
+  --cloud google-europe-north1 \
+  --plan startup-4
+```
+
+Create a Kafka service with custom configuration:
+
+```bash
+avn service create my-kafka \
+  --service-type kafka \
+  --cloud aws-us-east-1 \
+  --plan business-4 \
+  -c kafka_connect=true \
+  --disk-space-gib 600
+```
+
+#### Get service details
+
+```bash
+avn service get my-postgres
+```
+
+Get specific fields in custom format:
+
+```bash
+avn service get my-postgres --format '{service_name} {service_uri}'
+```
+
+Get output in JSON:
+
+```bash
+avn service get my-postgres --json
+```
+
+#### Update a service
+
+Scale to a different plan:
+
+```bash
+avn service update my-postgres --plan business-4
+```
+
+Move to a different cloud region:
+
+```bash
+avn service update my-postgres --cloud azure-germany-north
+```
+
+Update configuration:
+
+```bash
+avn service update my-postgres -c ip_filter=10.0.1.0/24,10.25.10.1/32
+```
+
+#### Power management
+
+Power off a service (stops billing for compute):
+
+```bash
+avn service update my-postgres --power-off
+```
+
+Power on a service:
+
+```bash
+avn service update my-postgres --power-on
+```
+
+#### Delete a service
+
+<Warning>
+This permanently deletes the service and all data. This action cannot be undone.
+</Warning>
+
+```bash
+avn service terminate my-postgres
+```
+
+Force deletion without confirmation:
+
+```bash
+avn service terminate my-postgres --force
+```
+
+#### Wait for service to be ready
+
+```bash
+avn service wait my-postgres
+```
+
+### Database operations
+
+#### PostgreSQL and MySQL databases
+
+List databases:
+
+```bash
+avn service database-list my-postgres
+```
+
+Create a database:
+
+```bash
+avn service database-create my-postgres mydb
+```
+
+Delete a database:
+
+```bash
+avn service database-delete my-postgres mydb
+```
+
+### User management
+
+List service users:
+
+```bash
+avn service user-list my-postgres
+```
+
+Create a new user:
+
+```bash
+avn service user-create my-postgres newuser
+```
+
+Reset user password:
+
+```bash
+avn service user-password-reset my-postgres myuser
+```
+
+Delete a user:
+
+```bash
+avn service user-delete my-postgres olduser
+```
+
+### Apache Kafka operations
+
+#### Topic management
+
+List topics:
+
+```bash
+avn service topic-list my-kafka
+```
+
+Create a topic:
+
+```bash
+avn service topic-create my-kafka \
+  my-topic \
+  --partitions 3 \
+  --replication 2 \
+  --retention 72h
+```
+
+Update topic configuration:
+
+```bash
+avn service topic-update my-kafka my-topic \
+  --retention 168h \
+  --min-insync-replicas 2
+```
+
+Delete a topic:
+
+```bash
+avn service topic-delete my-kafka my-topic
+```
+
+#### ACL management
+
+List ACLs:
+
+```bash
+avn service acl-list my-kafka
+```
+
+Add an ACL entry:
+
+```bash
+avn service acl-add my-kafka \
+  --permission read \
+  --topic my-topic \
+  --username myuser
+```
+
+Delete an ACL:
+
+```bash
+avn service acl-delete my-kafka ACL_ID
+```
+
+### Connection information
+
+Get connection details:
+
+```bash
+avn service connection-info my-postgres
+```
+
+Get specific connection format:
+
+```bash
+avn service connection-info my-kafka --format prometheus
+```
+
+### Service integrations
+
+List available integration types:
+
+```bash
+avn service integration-types-list
+```
+
+Create an integration:
+
+```bash
+avn service integration-create \
+  --integration-type datadog \
+  --source-service my-postgres \
+  --dest-endpoint my-datadog-endpoint
+```
+
+List integrations:
+
+```bash
+avn service integration-list my-postgres
+```
+
+## Advanced features
+
+### VPC management
+
+List VPCs:
+
+```bash
+avn vpc list
+```
+
+Create a VPC:
+
+```bash
+avn vpc create \
+  --cloud aws-us-east-1 \
+  --network-cidr 10.0.0.0/24
+```
+
+Create a VPC peering connection:
+
+```bash
+avn vpc peering-connection create \
+  --project-vpc-id VPC_ID \
+  --peer-cloud-account 123456789012 \
+  --peer-vpc vpc-abcdef123456
+```
+
+### Service logs
+
+View service logs:
+
+```bash
+avn service logs my-postgres
+```
+
+Follow logs in real-time:
+
+```bash
+avn service logs my-postgres --follow
+```
+
+### Metrics
+
+Get service metrics:
+
+```bash
+avn service metrics my-postgres --period day
+```
+
+Available periods: `hour`, `day`, `week`, `month`, `year`
+
+### Query statistics
+
+List slow queries (PostgreSQL/MySQL):
+
+```bash
+avn service queries my-postgres
+```
+
+Reset query statistics:
+
+```bash
+avn service queries-reset my-postgres
+```
+
+### Maintenance
+
+Start maintenance immediately:
+
+```bash
+avn service maintenance-start my-postgres
+```
+
+### Interactive shells
+
+Open an interactive shell to a service:
+
+<CodeGroup>
+```bash PostgreSQL
+avn service cli my-postgres
+```
+
+```bash Redis/Valkey
+avn service cli my-redis
+```
+</CodeGroup>
+
+## Configuration
+
+### Output format
+
+Get JSON output for any command:
+
+```bash
+avn service list --json
+```
+
+Use custom formatting:
+
+```bash
+avn service list --format '{service_name} {state} {plan}'
+```
+
+### Project switching
+
+Switch between projects:
+
+```bash
+avn project switch my-other-project
+```
+
+Run a single command against a different project:
+
+```bash
+avn service list --project my-other-project
+```
+
+### Configuration file
+
+The CLI stores configuration in `~/.config/aiven/aiven-credentials.json`
+
+## Service types and plans
+
+List available service types:
+
+```bash
+avn service types
+```
+
+View detailed service type information with all configuration options:
+
+```bash
+avn service types -v
+```
+
+List available plans for a service type:
+
+```bash
+avn service plans --service-type pg --cloud google-europe-north1
+```
+
+List available cloud regions:
+
+```bash
+avn cloud list
+```
+
+## Scripting tips
+
+### Error handling
+
+```bash
+if avn service get my-service &> /dev/null; then
+  echo "Service exists"
+else
+  echo "Service does not exist"
+fi
+```
+
+### Parse JSON output
+
+```bash
+# Using jq
+avn service get my-postgres --json | jq -r '.service_uri'
+
+# Get service state
+STATE=$(avn service get my-postgres --json | jq -r '.state')
+```
+
+### Wait for service creation
+
+```bash
+avn service create my-postgres \
+  --service-type pg \
+  --cloud google-europe-north1 \
+  --plan startup-4
+
+# Wait for it to be running
+avn service wait my-postgres
+
+echo "Service is ready!"
+```
+
+### Bulk operations
+
+```bash
+# Create multiple databases
+for db in db1 db2 db3; do
+  avn service database-create my-postgres $db
+done
+
+# List all services across all projects
+for project in $(avn project list --json | jq -r '.[]'); do
+  echo "Project: $project"
+  avn service list --project $project
+done
+```
+
+## Common use cases
+
+<AccordionGroup>
+  <Accordion title="CI/CD integration">
+    ```bash
+    # Create test database
+    avn service create test-db-$CI_BUILD_ID \
+      --service-type pg \
+      --cloud google-europe-north1 \
+      --plan hobbyist
+    
+    # Wait for it to be ready
+    avn service wait test-db-$CI_BUILD_ID
+    
+    # Get connection URI
+    DB_URI=$(avn service get test-db-$CI_BUILD_ID --json | jq -r '.service_uri')
+    
+    # Run tests
+    pytest --db-uri=$DB_URI
+    
+    # Clean up
+    avn service terminate test-db-$CI_BUILD_ID --force
+    ```
+  </Accordion>
+  
+  <Accordion title="Backup and disaster recovery">
+    ```bash
+    # List available backups
+    avn service backup-list my-postgres
+    
+    # Create service from backup
+    avn service create my-postgres-restore \
+      --service-type pg \
+      --cloud google-europe-north1 \
+      --plan startup-4 \
+      -c backup_name=BACKUP_NAME
+    ```
+  </Accordion>
+  
+  <Accordion title="Migration tasks">
+    ```bash
+    # Check migration from external database
+    avn service task-create \
+      --operation migration_check \
+      --source-service-uri mysql://user:pass@host:port/db \
+      --project myproject \
+      mysql-service
+    
+    # Get task status
+    avn service task-get \
+      --task-id TASK_ID \
+      --project myproject \
+      mysql-service
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Check CLI version
+
+```bash
+avn --version
+```
+
+### Enable debug output
+
+```bash
+avN_DEBUG=1 avn service list
+```
+
+### Re-authenticate
+
+```bash
+avn user logout
+avn user login your-email@example.com --token
+```
+
+## Related resources
+
+- [Aiven CLI GitHub Repository](https://github.com/aiven/aiven-client)
+- [Getting Started Tutorial (Video)](https://www.youtube.com/watch?v=nf3PPn5w6K8)
+- [Aiven CLI Blog Post](https://aiven.io/blog/aiven-cmdline)
+- [Aiven API Documentation](/tools/api)

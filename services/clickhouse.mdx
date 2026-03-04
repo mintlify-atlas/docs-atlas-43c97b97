@@ -1,0 +1,767 @@
+---
+title: Aiven for ClickHouse
+description: Fully managed columnar database for real-time analytical data warehousing and OLAP workloads with advanced SQL query capabilities.
+---
+
+Aiven for ClickHouse is a fully managed distributed columnar database based on open-source ClickHouse. Purpose-built for online analytical processing (OLAP), it delivers blazing-fast SQL queries on large datasets for real-time analytical reporting and data warehousing.
+
+## Overview
+
+ClickHouse is a highly scalable, fault-tolerant database designed specifically for analytical workloads. Its columnar storage format and advanced compression enable complex SQL queries on billions of rows with sub-second response times.
+
+### Why Choose Aiven for ClickHouse
+
+<CardGroup cols={2}>
+  <Card title="Extreme Performance" icon="rocket">
+    Process billions of rows per second with columnar storage and vectorized query execution
+  </Card>
+  <Card title="Real-Time Analytics" icon="chart-line">
+    Ingest and query data simultaneously for up-to-the-second insights
+  </Card>
+  <Card title="SQL Compatible" icon="database">
+    Use familiar SQL syntax with advanced analytical functions
+  </Card>
+  <Card title="Built-in Integrations" icon="plug">
+    Native integration with Kafka and PostgreSQL for seamless data pipelines
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Columnar Storage">
+    Optimized for analytical queries:
+
+    - Store data by columns instead of rows
+    - Read only columns needed for query
+    - Achieve 10-100x compression ratios
+    - Parallel processing across columns
+    - Minimize disk I/O for aggregations
+  </Accordion>
+
+  <Accordion title="Distributed Architecture">
+    Scale horizontally with sharding:
+
+    - Data distributed across multiple shards
+    - Queries executed in parallel
+    - Replicas for high availability
+    - Automatic data rebalancing
+    - ZooKeeper for coordination
+
+    **Create Distributed Table:**
+    ```sql
+    CREATE TABLE events_distributed ON CLUSTER 'default'
+    (
+        timestamp DateTime,
+        user_id UInt64,
+        event_type String,
+        properties String
+    )
+    ENGINE = Distributed('default', 'default', 'events_local', rand());
+    ```
+  </Accordion>
+
+  <Accordion title="Data Integration">
+    **Kafka Integration:**
+    Stream data directly from Kafka topics:
+
+    ```sql
+    CREATE TABLE kafka_events
+    (
+        timestamp DateTime,
+        user_id UInt64,
+        event String
+    )
+    ENGINE = Kafka()
+    SETTINGS
+        kafka_broker_list = 'kafka-service:9092',
+        kafka_topic_list = 'events',
+        kafka_group_name = 'clickhouse_consumer',
+        kafka_format = 'JSONEachRow';
+
+    -- Materialized view to store data
+    CREATE MATERIALIZED VIEW events_mv TO events AS
+    SELECT * FROM kafka_events;
+    ```
+
+    **PostgreSQL Integration:**
+    Query PostgreSQL directly:
+
+    ```sql
+    SELECT * FROM postgresql(
+        'postgres-host:5432',
+        'database',
+        'table',
+        'user',
+        'password'
+    );
+    ```
+  </Accordion>
+
+  <Accordion title="Advanced Compression">
+    Multiple compression algorithms:
+
+    - LZ4 (default, fast)
+    - ZSTD (high compression)
+    - Delta encoding for timestamps
+    - Dictionary compression for strings
+    - Automatic codec selection
+
+    ```sql
+    CREATE TABLE metrics
+    (
+        timestamp DateTime CODEC(DoubleDelta, LZ4),
+        value Float64 CODEC(Gorilla, LZ4),
+        tag String CODEC(ZSTD)
+    )
+    ENGINE = MergeTree()
+    ORDER BY timestamp;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create ClickHouse Service">
+    Deploy a ClickHouse service:
+
+    ```bash
+    avn service create my-clickhouse \
+      --service-type clickhouse \
+      --cloud aws-us-east-1 \
+      --plan business-8
+    ```
+  </Step>
+
+  <Step title="Connect with clickhouse-client">
+    Install and connect with the native client:
+
+    ```bash
+    clickhouse-client \
+      --host clickhouse-service.aivencloud.com \
+      --port 9440 \
+      --user avnadmin \
+      --password your-password \
+      --secure
+    ```
+  </Step>
+
+  <Step title="Create Your First Table">
+    ```sql
+    CREATE TABLE events
+    (
+        timestamp DateTime,
+        user_id UInt64,
+        event_type String,
+        country String,
+        revenue Nullable(Float64)
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(timestamp)
+    ORDER BY (timestamp, user_id);
+    ```
+  </Step>
+
+  <Step title="Insert and Query Data">
+    ```sql
+    -- Insert data
+    INSERT INTO events VALUES
+        ('2024-03-04 10:00:00', 123, 'purchase', 'US', 99.99),
+        ('2024-03-04 10:05:00', 456, 'view', 'UK', NULL),
+        ('2024-03-04 10:10:00', 123, 'view', 'US', NULL);
+
+    -- Query data
+    SELECT 
+        toStartOfHour(timestamp) AS hour,
+        event_type,
+        count() AS event_count,
+        sum(revenue) AS total_revenue
+    FROM events
+    WHERE timestamp >= '2024-03-04'
+    GROUP BY hour, event_type
+    ORDER BY hour, event_count DESC;
+    ```
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python (Native)">
+    ```python
+    from clickhouse_driver import Client
+
+    # Connect using native protocol
+    client = Client(
+        host='clickhouse-service.aivencloud.com',
+        port=9440,
+        user='avnadmin',
+        password='your-password',
+        secure=True,
+        database='default'
+    )
+
+    # Create table
+    client.execute('''
+        CREATE TABLE IF NOT EXISTS page_views
+        (
+            date Date,
+            user_id UInt64,
+            page String,
+            duration UInt32
+        )
+        ENGINE = MergeTree()
+        PARTITION BY toYYYYMM(date)
+        ORDER BY (date, user_id)
+    ''')
+
+    # Insert data
+    data = [
+        ('2024-03-04', 123, '/home', 45),
+        ('2024-03-04', 456, '/products', 120),
+        ('2024-03-04', 789, '/checkout', 300)
+    ]
+
+    client.execute(
+        'INSERT INTO page_views (date, user_id, page, duration) VALUES',
+        data
+    )
+
+    # Query data
+    result = client.execute('''
+        SELECT 
+            page,
+            count() AS views,
+            avg(duration) AS avg_duration
+        FROM page_views
+        WHERE date = today()
+        GROUP BY page
+        ORDER BY views DESC
+    ''')
+
+    for row in result:
+        print(f"Page: {row[0]}, Views: {row[1]}, Avg Duration: {row[2]:.2f}s")
+    ```
+  </Tab>
+
+  <Tab title="Python (HTTPS)">
+    ```python
+    import requests
+    import json
+
+    # Connection details
+    url = 'https://clickhouse-service.aivencloud.com:8443'
+    headers = {
+        'X-ClickHouse-User': 'avnadmin',
+        'X-ClickHouse-Key': 'your-password',
+        'X-ClickHouse-Database': 'default',
+        'X-ClickHouse-Format': 'JSONCompact'
+    }
+
+    # Execute query
+    query = '''
+        SELECT 
+            toDate(timestamp) AS date,
+            count() AS events,
+            uniq(user_id) AS unique_users
+        FROM events
+        GROUP BY date
+        ORDER BY date DESC
+        LIMIT 10
+    '''
+
+    response = requests.post(
+        url,
+        params={'query': query},
+        headers=headers
+    )
+
+    data = response.json()
+    print(json.dumps(data, indent=2))
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const { ClickHouse } = require('clickhouse');
+
+    const clickhouse = new ClickHouse({
+      url: 'https://clickhouse-service.aivencloud.com',
+      port: 8443,
+      format: 'json',
+      config: {
+        database: 'default'
+      },
+      basicAuth: {
+        username: 'avnadmin',
+        password: 'your-password'
+      }
+    });
+
+    async function queryData() {
+      const query = `
+        SELECT 
+          toStartOfDay(timestamp) AS day,
+          event_type,
+          count() AS count
+        FROM events
+        WHERE timestamp >= today() - INTERVAL 7 DAY
+        GROUP BY day, event_type
+        ORDER BY day DESC, count DESC
+      `;
+
+      const result = await clickhouse.query(query).toPromise();
+      console.log(result);
+    }
+
+    async function insertData() {
+      const data = [
+        [new Date(), 123, 'click'],
+        [new Date(), 456, 'view'],
+      ];
+
+      await clickhouse.insert(
+        'INSERT INTO events (timestamp, user_id, event_type)',
+        data
+      ).toPromise();
+    }
+
+    queryData().catch(console.error);
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import com.clickhouse.client.*;
+    import com.clickhouse.data.ClickHouseFormat;
+
+    public class ClickHouseExample {
+        public static void main(String[] args) throws Exception {
+            ClickHouseNode server = ClickHouseNode.builder()
+                .host("clickhouse-service.aivencloud.com")
+                .port(ClickHouseProtocol.HTTP, 8443)
+                .database("default")
+                .credentials(ClickHouseCredentials.fromUserAndPassword(
+                    "avnadmin", "your-password"))
+                .build();
+
+            try (ClickHouseClient client = ClickHouseClient.newInstance(server.getProtocol())) {
+                // Query data
+                try (ClickHouseResponse response = client.read(server)
+                    .query("SELECT * FROM events LIMIT 10")
+                    .format(ClickHouseFormat.RowBinaryWithNamesAndTypes)
+                    .execute().get()) {
+                    
+                    for (ClickHouseRecord record : response.records()) {
+                        System.out.println(record.getValue(0) + ": " + record.getValue(1));
+                    }
+                }
+
+                // Insert data
+                try (ClickHouseResponse response = client.write(server)
+                    .query("INSERT INTO events VALUES (now(), 123, 'test')")
+                    .execute().get()) {
+                    System.out.println("Inserted successfully");
+                }
+            }
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Table Engines
+
+<Tabs>
+  <Tab title="MergeTree">
+    Most common engine for analytical workloads:
+
+    ```sql
+    CREATE TABLE analytics
+    (
+        date Date,
+        hour UInt8,
+        user_id UInt64,
+        metric Float64
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(date)
+    ORDER BY (date, hour, user_id)
+    SETTINGS index_granularity = 8192;
+    ```
+
+    **Features:**
+    - Primary key indexing
+    - Data partitioning
+    - Data sampling
+    - Data TTL
+  </Tab>
+
+  <Tab title="ReplicatedMergeTree">
+    MergeTree with replication:
+
+    ```sql
+    CREATE TABLE replicated_events ON CLUSTER 'default'
+    (
+        timestamp DateTime,
+        event String
+    )
+    ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/events', '{replica}')
+    PARTITION BY toYYYYMM(timestamp)
+    ORDER BY timestamp;
+    ```
+
+    **Features:**
+    - Automatic data replication
+    - Fault tolerance
+    - Distributed queries
+  </Tab>
+
+  <Tab title="AggregatingMergeTree">
+    Pre-aggregate data on merge:
+
+    ```sql
+    CREATE TABLE daily_stats
+    (
+        date Date,
+        metric_name String,
+        count AggregateFunction(count),
+        sum AggregateFunction(sum, Float64),
+        avg AggregateFunction(avg, Float64)
+    )
+    ENGINE = AggregatingMergeTree()
+    PARTITION BY toYYYYMM(date)
+    ORDER BY (date, metric_name);
+
+    -- Insert using -State functions
+    INSERT INTO daily_stats
+    SELECT
+        toDate(timestamp) AS date,
+        'page_views' AS metric_name,
+        countState() AS count,
+        sumState(duration) AS sum,
+        avgState(duration) AS avg
+    FROM page_views
+    GROUP BY date;
+
+    -- Query using -Merge functions
+    SELECT
+        date,
+        countMerge(count) AS total_count,
+        sumMerge(sum) AS total_sum,
+        avgMerge(avg) AS average
+    FROM daily_stats
+    GROUP BY date;
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Features
+
+### Materialized Views
+
+<Accordion title="Real-Time Aggregations">
+  ```sql
+  -- Source table
+  CREATE TABLE events
+  (
+      timestamp DateTime,
+      user_id UInt64,
+      event_type String,
+      revenue Nullable(Float64)
+  )
+  ENGINE = MergeTree()
+  ORDER BY timestamp;
+
+  -- Target table for aggregated data
+  CREATE TABLE hourly_stats
+  (
+      hour DateTime,
+      event_type String,
+      event_count UInt64,
+      total_revenue Float64,
+      unique_users UInt64
+  )
+  ENGINE = SummingMergeTree()
+  PARTITION BY toYYYYMM(hour)
+  ORDER BY (hour, event_type);
+
+  -- Materialized view
+  CREATE MATERIALIZED VIEW events_mv TO hourly_stats AS
+  SELECT
+      toStartOfHour(timestamp) AS hour,
+      event_type,
+      count() AS event_count,
+      sum(revenue) AS total_revenue,
+      uniq(user_id) AS unique_users
+  FROM events
+  GROUP BY hour, event_type;
+  ```
+</Accordion>
+
+### Dictionaries
+
+<Accordion title="Fast Lookups">
+  ```sql
+  -- Create dictionary from external source
+  CREATE DICTIONARY user_info
+  (
+      user_id UInt64,
+      name String,
+      country String,
+      created_at DateTime
+  )
+  PRIMARY KEY user_id
+  SOURCE(POSTGRESQL(
+      host 'postgres-host'
+      port 5432
+      user 'readonly'
+      password 'secret'
+      db 'users'
+      table 'user_profiles'
+  ))
+  LAYOUT(HASHED())
+  LIFETIME(3600);
+
+  -- Use dictionary in queries
+  SELECT
+      e.user_id,
+      dictGet('user_info', 'name', e.user_id) AS user_name,
+      dictGet('user_info', 'country', e.user_id) AS country,
+      count() AS events
+  FROM events e
+  GROUP BY e.user_id;
+  ```
+</Accordion>
+
+### Window Functions
+
+<Accordion title="Analytical Calculations">
+  ```sql
+  SELECT
+      date,
+      revenue,
+      -- Running total
+      sum(revenue) OVER (ORDER BY date) AS cumulative_revenue,
+      -- Moving average
+      avg(revenue) OVER (
+          ORDER BY date 
+          ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+      ) AS ma_7day,
+      -- Rank
+      row_number() OVER (ORDER BY revenue DESC) AS rank,
+      -- Percent change
+      (revenue - lag(revenue) OVER (ORDER BY date)) / lag(revenue) OVER (ORDER BY date) * 100 AS pct_change
+  FROM daily_revenue
+  ORDER BY date;
+  ```
+</Accordion>
+
+## Performance Optimization
+
+<AccordionGroup>
+  <Accordion title="Partitioning Strategy">
+    Partition large tables for faster queries:
+
+    ```sql
+    -- Partition by month
+    CREATE TABLE events
+    (
+        timestamp DateTime,
+        data String
+    )
+    ENGINE = MergeTree()
+    PARTITION BY toYYYYMM(timestamp)
+    ORDER BY timestamp;
+
+    -- Query specific partition
+    SELECT * FROM events
+    WHERE timestamp >= '2024-03-01' AND timestamp < '2024-04-01';
+
+    -- Drop old partitions
+    ALTER TABLE events DROP PARTITION '202401';
+    ```
+  </Accordion>
+
+  <Accordion title="Indexing">
+    Multiple index types available:
+
+    ```sql
+    CREATE TABLE search_logs
+    (
+        timestamp DateTime,
+        query String,
+        user_id UInt64,
+        INDEX query_idx query TYPE tokenbf_v1(10000, 3, 0) GRANULARITY 4,
+        INDEX user_idx user_id TYPE minmax GRANULARITY 1
+    )
+    ENGINE = MergeTree()
+    ORDER BY timestamp;
+    ```
+  </Accordion>
+
+  <Accordion title="Query Optimization">
+    Best practices:
+
+    - Use `PREWHERE` for heavy filtering
+    - Minimize `SELECT *`
+    - Use appropriate data types
+    - Leverage primary key ordering
+    - Use sampling for exploratory queries
+
+    ```sql
+    -- Use PREWHERE for filtering
+    SELECT user_id, count()
+    FROM events
+    PREWHERE date = today()
+    WHERE event_type = 'purchase'
+    GROUP BY user_id;
+
+    -- Sample data for fast results
+    SELECT avg(revenue)
+    FROM events SAMPLE 0.1
+    WHERE date >= today() - 30;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring and Maintenance
+
+### System Tables
+
+```sql
+-- Query statistics
+SELECT
+    query,
+    read_rows,
+    read_bytes,
+    total_rows_approx,
+    elapsed
+FROM system.query_log
+WHERE type = 'QueryFinish'
+ORDER BY elapsed DESC
+LIMIT 10;
+
+-- Table sizes
+SELECT
+    database,
+    table,
+    formatReadableSize(sum(bytes)) AS size,
+    sum(rows) AS rows
+FROM system.parts
+WHERE active
+GROUP BY database, table
+ORDER BY sum(bytes) DESC;
+
+-- Current queries
+SELECT
+    query_id,
+    user,
+    query,
+    elapsed,
+    read_rows,
+    memory_usage
+FROM system.processes
+ORDER BY elapsed DESC;
+```
+
+### Integration with Grafana
+
+```bash
+avn service integration-create \
+  --integration-type clickhouse_grafana \
+  --source-service my-clickhouse \
+  --dest-service my-grafana
+```
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Web Analytics">
+    - Page view tracking
+    - User behavior analysis
+    - Conversion funnels
+    - A/B testing results
+    - Real-time dashboards
+  </Tab>
+
+  <Tab title="Business Intelligence">
+    - Sales analytics
+    - Customer segmentation
+    - Revenue forecasting
+    - Operational metrics
+    - Executive dashboards
+  </Tab>
+
+  <Tab title="Log Analytics">
+    - Application log analysis
+    - Security event monitoring
+    - Performance troubleshooting
+    - Anomaly detection
+    - Compliance reporting
+  </Tab>
+
+  <Tab title="IoT and Time-Series">
+    - Sensor data analysis
+    - Infrastructure monitoring
+    - Network telemetry
+    - Financial market data
+    - Real-time alerting
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Schema Design">
+    - Use appropriate data types (UInt over Int when possible)
+    - Order columns by query frequency
+    - Use `LowCardinality` for enum-like strings
+    - Denormalize for performance
+    - Partition large tables by time
+  </Accordion>
+
+  <Accordion title="Data Ingestion">
+    - Batch inserts (1000+ rows)
+    - Use async inserts for high throughput
+    - Leverage Kafka integration for streaming
+    - Use appropriate format (Native, Arrow, Parquet)
+    - Monitor insert performance
+  </Accordion>
+
+  <Accordion title="Query Performance">
+    - Filter early with WHERE/PREWHERE
+    - Use materialized views for common aggregations
+    - Leverage dictionaries for dimension data
+    - Sample data for exploratory queries
+    - Monitor slow queries
+  </Accordion>
+</AccordionGroup>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Stream data from Kafka to ClickHouse
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Query PostgreSQL data from ClickHouse
+  </Card>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Visualize ClickHouse data in Grafana
+  </Card>
+  <Card title="Apache Flink" icon="wave-pulse" href="/services/flink">
+    Process streams and load to ClickHouse
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [ClickHouse Documentation](https://clickhouse.com/docs)
+- [ClickHouse SQL Reference](https://clickhouse.com/docs/en/sql-reference/)
+- [Aiven ClickHouse Plans](https://aiven.io/clickhouse)
+
+<Note>
+  **Performance Tip**: ClickHouse can process billions of rows per second. Design your schemas and queries to take advantage of columnar storage and parallel processing.
+</Note>

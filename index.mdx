@@ -1,97 +1,278 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Aiven Documentation
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#fb513b] via-[#fc6f0b] to-[#fb513b] dark:from-[#fb513b] dark:via-[#fc6f0b] dark:to-[#fb513b] py-20">
+  <div className="max-w-6xl mx-auto px-6">
+    <div className="grid lg:grid-cols-12 gap-8 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6">
+          AI-Ready Open Source Data Platform
+        </h1>
+        <p className="text-xl text-white/90 max-w-2xl mb-8">
+          Deploy and manage Apache Kafka, PostgreSQL, MySQL, OpenSearch, ClickHouse, and more across AWS, Azure, and Google Cloud with enterprise-grade reliability and security.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a
+            href="/quickstart"
+            className="inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-[#fb513b] bg-white rounded-lg hover:bg-gray-100 transition-colors no-underline"
+          >
+            Get Started
+          </a>
+          <a
+            href="/services/overview"
+            className="inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white border-2 border-white/30 bg-white/10 rounded-lg hover:bg-white/20 transition-colors no-underline"
+          >
+            Explore Services
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Quick Start
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get started with Aiven in minutes
+  </p>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+  <Steps>
+    <Step title="Sign up for an account">
+      Create your free Aiven account at [console.aiven.io](https://console.aiven.io/signup). No credit card required to start exploring.
+    </Step>
+    
+    <Step title="Set up your organization">
+      Configure your organization structure, add billing details, and invite team members. Organize your resources with projects and organizational units.
+      
+      ```bash
+      # Or use the Aiven CLI
+      avn user login
+      avn project create my-first-project
+      ```
+    </Step>
+    
+    <Step title="Create your first service">
+      Deploy a managed database or streaming service in seconds. Choose from Kafka, PostgreSQL, MySQL, OpenSearch, and more.
+      
+      <Accordion title="Example: Create a PostgreSQL service">
+        ```bash
+        avn service create my-postgres \
+          --service-type pg \
+          --cloud aws-us-east-1 \
+          --plan business-4
+        ```
+        
+        Your service will be ready in a few minutes with automatic backups, high availability, and monitoring enabled.
+      </Accordion>
+    </Step>
+    
+    <Step title="Connect and start building">
+      Get connection credentials from the Console or CLI and connect your applications. All services include TLS encryption and authentication by default.
+      
+      Learn more in our [platform overview](/platform/overview) and [service documentation](/services/overview).
+    </Step>
+  </Steps>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Managed Services
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Production-ready open source data services
+  </p>
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
+  <CardGroup cols={3}>
     <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+      title="Apache Kafka"
+      icon="stream"
+      href="/services/kafka"
+    >
+      Stream processing with Kafka, Connect, and Schema Registry
+    </Card>
+    <Card
+      title="PostgreSQL"
+      icon="database"
+      href="/services/postgresql"
+    >
+      Reliable relational database with extensions like pgvector and TimescaleDB
+    </Card>
+    <Card
+      title="MySQL"
+      icon="database"
+      href="/services/mysql"
+    >
+      Popular open source relational database
+    </Card>
+    <Card
+      title="OpenSearch"
+      icon="magnifying-glass"
+      href="/services/opensearch"
+    >
+      Search and analytics engine with dashboards
+    </Card>
+    <Card
+      title="ClickHouse"
+      icon="chart-column"
+      href="/services/clickhouse"
+    >
+      Fast columnar database for analytics
+    </Card>
+    <Card
+      title="Apache Flink"
+      icon="bolt"
+      href="/services/flink"
+    >
+      Stateful stream processing at scale
+    </Card>
+    <Card
+      title="Valkey"
+      icon="memory"
+      href="/services/valkey"
+    >
+      In-memory data store compatible with Redis
+    </Card>
+    <Card
+      title="Dragonfly"
+      icon="gauge-high"
+      href="/services/dragonfly"
+    >
+      High-performance in-memory data store
+    </Card>
+    <Card
+      title="Grafana"
+      icon="chart-line"
+      href="/services/grafana"
+    >
+      Visualization and observability platform
+    </Card>
+  </CardGroup>
+</div>
 
-## Create beautiful pages
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Platform Features
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Enterprise-grade capabilities for production workloads
+  </p>
 
-Everything you need to create world-class documentation.
+  <CardGroup cols={2}>
+    <Card
+      title="Multi-Cloud Deployment"
+      icon="cloud"
+      href="/platform/overview"
+    >
+      Deploy services across AWS, Azure, and Google Cloud. Bring Your Own Cloud (BYOC) supported.
+    </Card>
+    <Card
+      title="Organizations & Projects"
+      icon="sitemap"
+      href="/platform/organizations-and-projects"
+    >
+      Organize resources with hierarchical structure and role-based access control
+    </Card>
+    <Card
+      title="VPC & Networking"
+      icon="network-wired"
+      href="/platform/vpc-and-networking"
+    >
+      Private networking with VPC peering, transit gateway, and static IPs
+    </Card>
+    <Card
+      title="Authentication & SSO"
+      icon="shield-halved"
+      href="/platform/authentication"
+    >
+      SAML, OAuth, and managed users with your identity provider
+    </Card>
+    <Card
+      title="Monitoring & Logs"
+      icon="chart-simple"
+      href="/platform/monitoring-and-logs"
+    >
+      Built-in monitoring with integration to Datadog, CloudWatch, and more
+    </Card>
+    <Card
+      title="Automatic Backups"
+      icon="floppy-disk"
+      href="/platform/security"
+    >
+      Point-in-time recovery with automatic backups to another region
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+    Developer Tools
+  </h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Build and automate with your preferred tools
+  </p>
 
-## Need inspiration?
+  <CardGroup cols={2}>
+    <Card
+      title="Aiven Console"
+      icon="browser"
+      href="/tools/console"
+    >
+      Web-based interface for managing all your services and projects
+    </Card>
+    <Card
+      title="API"
+      icon="code"
+      href="/tools/api"
+    >
+      RESTful API for programmatic access to all platform features
+    </Card>
+    <Card
+      title="CLI"
+      icon="terminal"
+      href="/tools/cli"
+    >
+      Command-line interface for scripting and automation
+    </Card>
+    <Card
+      title="Terraform Provider"
+      icon="cube"
+      href="/tools/terraform"
+    >
+      Infrastructure as code with the official Terraform provider
+    </Card>
+    <Card
+      title="Kubernetes Operator"
+      icon="dharmachakra"
+      href="/tools/kubernetes"
+    >
+      Native Kubernetes integration for GitOps workflows
+    </Card>
+    <Card
+      title="SQL Query Optimizer"
+      icon="wand-magic-sparkles"
+      href="/tools/query-optimizer"
+    >
+      AI-powered query optimization and tuning
+    </Card>
+  </CardGroup>
+</div>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="bg-gray-50 dark:bg-[#1a1d27] border border-gray-200 dark:border-[#27272a] rounded-2xl p-8 text-center">
+    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      Ready to get started?
+    </h2>
+    <p className="text-base text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+      Sign up for a free trial and start deploying managed open source services in minutes. No credit card required.
+    </p>
+    <a
+      href="/quickstart"
+      className="inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-[#fb513b] rounded-lg hover:bg-[#fc6f0b] transition-colors no-underline"
+    >
+      Get Started for Free
+    </a>
+  </div>
+</div>

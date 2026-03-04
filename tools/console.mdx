@@ -1,0 +1,244 @@
+---
+title: Aiven Console
+description: Use the Aiven Console web interface to create and manage services, configure organizations, and manage billing.
+---
+
+The [Aiven Console](https://console.aiven.io) is a web-based interface for managing your Aiven services, organizations, projects, and billing. It provides an intuitive way to interact with the Aiven platform without requiring command-line tools or programming.
+
+## Getting started
+
+<Steps>
+  <Step title="Sign up">
+    [Create an Aiven account](https://console.aiven.io/signup) to get started
+  </Step>
+  
+  <Step title="Create an organization">
+    Set up an organization to manage your projects and services effectively
+  </Step>
+  
+  <Step title="Create a project">
+    Projects contain your services and help organize resources
+  </Step>
+  
+  <Step title="Create your first service">
+    Launch a database or other service from the Services page
+  </Step>
+</Steps>
+
+## Console features
+
+### User profile
+
+Access your personal information and settings by clicking the **User information** icon in the top right corner.
+
+#### Personal information
+
+- Update your name and other personal details
+- View organizations you belong to
+- Access referral links
+
+<Note>
+You cannot edit your email address directly. To change it, you need to migrate your resources to a new email address within your projects.
+</Note>
+
+#### Authentication methods
+
+Manage your authentication settings on the **Authentication methods** tab:
+
+- Add or remove authentication methods
+- Configure two-factor authentication (2FA)
+- Manage password settings
+
+#### Personal tokens
+
+Generate and manage authentication tokens for CLI, API, and other programmatic access:
+
+<Steps>
+  <Step title="Navigate to tokens">
+    Go to **User Profile** > **Tokens**
+  </Step>
+  
+  <Step title="Create a token">
+    Click **Generate token** and provide a description
+  </Step>
+  
+  <Step title="Copy and store securely">
+    Copy the token immediately - it won't be shown again
+  </Step>
+</Steps>
+
+<Warning>
+Tokens provide full access to your account. Store them securely and never commit them to version control.
+</Warning>
+
+### Organizations and organizational units
+
+The current organization or organizational unit is displayed at the top of the page. Switch between organizations using the dropdown menu.
+
+#### Organization benefits
+
+<CardGroup cols={2}>
+  <Card title="Centralized management" icon="building">
+    Manage multiple projects from a single location
+  </Card>
+  
+  <Card title="User groups" icon="users">
+    Organize team members with role-based access
+  </Card>
+  
+  <Card title="Billing groups" icon="credit-card">
+    Consolidate billing across projects
+  </Card>
+  
+  <Card title="SAML authentication" icon="shield">
+    Enterprise SSO integration
+  </Card>
+</CardGroup>
+
+#### Organization settings
+
+Access organization settings from the **Admin** page:
+
+- Manage user groups and permissions
+- Create new projects
+- Configure authentication policies
+- View activity logs
+- Rename or delete organizations
+
+### Projects and services
+
+#### Project management
+
+Navigate between projects using the **Projects** dropdown menu. The menu shows projects within your current organization.
+
+#### Services page
+
+The **Services** page displays all services in the selected project:
+
+- View service status and health
+- Create new services
+- Access service details and configuration
+- Monitor service metrics
+
+#### Service creation
+
+<Steps>
+  <Step title="Select service type">
+    Choose from PostgreSQL, MySQL, Apache Kafka, OpenSearch, and more
+  </Step>
+  
+  <Step title="Choose cloud and region">
+    Select your preferred cloud provider and geographic region
+  </Step>
+  
+  <Step title="Select plan">
+    Pick a plan based on your performance and storage needs
+  </Step>
+  
+  <Step title="Configure settings">
+    Set service name and optional configuration parameters
+  </Step>
+  
+  <Step title="Create service">
+    Review and create your service
+  </Step>
+</Steps>
+
+#### Additional project features
+
+From the Services page, access:
+
+- **Integration endpoints**: Configure external service integrations
+- **VPCs**: Set up Virtual Private Clouds for network isolation
+- **Project logs**: View audit logs of project activities
+- **Project permissions**: Manage user access to the project
+- **Project settings**: Configure project-level settings
+
+### Billing groups
+
+Billing groups enable consolidated billing across multiple projects:
+
+<Tabs>
+  <Tab title="Benefits">
+    - Single invoice for multiple projects
+    - Centralized payment management
+    - Cost tracking across projects
+    - Shared payment methods
+  </Tab>
+  
+  <Tab title="Setup">
+    <Steps>
+      <Step title="Navigate to Billing">
+        Click **Billing** in the main navigation
+      </Step>
+      
+      <Step title="Create billing group">
+        Click **Create billing group** and provide a name
+      </Step>
+      
+      <Step title="Add payment method">
+        Add a credit card or other payment method
+      </Step>
+      
+      <Step title="Assign projects">
+        Select projects to include in the billing group
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Management">
+    - View consolidated invoices
+    - Manage payment cards
+    - Update billing information
+    - Track usage and costs
+    - Download invoice history
+  </Tab>
+</Tabs>
+
+## Feature previews
+
+Enable feature previews in your user profile to test upcoming features before general availability:
+
+1. Go to **User Profile** > **Feature Previews**
+2. Enable desired preview features
+3. Provide feedback on preview features
+
+<Note>
+Preview features may change or have limited support. Use them in non-production environments.
+</Note>
+
+## Console tips
+
+<AccordionGroup>
+  <Accordion title="Keyboard shortcuts">
+    Use keyboard shortcuts to navigate more efficiently:
+    - `?` - Show keyboard shortcuts
+    - `g s` - Go to services
+    - `g p` - Go to projects
+  </Accordion>
+  
+  <Accordion title="Quick search">
+    Use the search bar at the top to quickly find:
+    - Services across projects
+    - Documentation
+    - Settings pages
+  </Accordion>
+  
+  <Accordion title="Service quick actions">
+    Right-click services for quick actions:
+    - Power on/off
+    - View connection info
+    - Access service settings
+  </Accordion>
+</AccordionGroup>
+
+## Mobile access
+
+The Aiven Console is responsive and works on mobile devices for monitoring and basic management tasks.
+
+## Related resources
+
+- [Create your first service](https://aiven.io/docs/platform/howto/create_new_service)
+- [Managing organizations](https://aiven.io/docs/platform/concepts/orgs-units-projects)
+- [Billing groups](https://aiven.io/docs/platform/howto/use-billing-groups)
+- [Authentication tokens](https://aiven.io/docs/platform/concepts/authentication-tokens)

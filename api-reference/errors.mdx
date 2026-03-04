@@ -1,0 +1,362 @@
+---
+title: Error Handling
+description: Understanding error codes, responses, and troubleshooting API errors
+---
+
+The Aiven API uses conventional HTTP status codes to indicate the success or failure of requests. Error responses include detailed information to help diagnose and resolve issues.
+
+## HTTP status codes
+
+The API returns standard HTTP status codes:
+
+### Success codes (2xx)
+
+<ResponseField name="200 OK" type="success">
+  The request succeeded. The response body contains the requested data.
+</ResponseField>
+
+<ResponseField name="201 Created" type="success">
+  A resource was successfully created. The response includes the new resource details.
+</ResponseField>
+
+<ResponseField name="202 Accepted" type="success">
+  The request has been accepted for processing but is not yet complete. Common for long-running operations.
+</ResponseField>
+
+<ResponseField name="204 No Content" type="success">
+  The request succeeded but there's no content to return. Common for DELETE operations.
+</ResponseField>
+
+### Client error codes (4xx)
+
+<ResponseField name="400 Bad Request" type="error">
+  The request is malformed or contains invalid parameters. Check your request body and query parameters.
+</ResponseField>
+
+<ResponseField name="401 Unauthorized" type="error">
+  Authentication failed or no authentication token was provided. Verify your token is valid and properly formatted.
+</ResponseField>
+
+<ResponseField name="403 Forbidden" type="error">
+  The authenticated user doesn't have permission to access this resource. Check your organization and project permissions.
+</ResponseField>
+
+<ResponseField name="404 Not Found" type="error">
+  The requested resource doesn't exist. Verify the resource name or ID.
+</ResponseField>
+
+<ResponseField name="409 Conflict" type="error">
+  The request conflicts with the current state of the resource. For example, trying to create a resource that already exists.
+</ResponseField>
+
+<ResponseField name="429 Too Many Requests" type="error">
+  You've exceeded the API rate limit. Implement exponential backoff and retry logic.
+</ResponseField>
+
+### Server error codes (5xx)
+
+<ResponseField name="500 Internal Server Error" type="error">
+  An unexpected error occurred on the server. Retry the request, and contact support if the issue persists.
+</ResponseField>
+
+<ResponseField name="503 Service Unavailable" type="error">
+  The API is temporarily unavailable. Retry the request after a brief delay.
+</ResponseField>
+
+## Error response format
+
+Error responses follow a consistent JSON structure:
+
+```json
+{
+  "errors": [
+    {
+      "message": "Human-readable error description",
+      "field": "field_name",
+      "status": 400
+    }
+  ],
+  "message": "Primary error message"
+}
+```
+
+<ParamField path="errors" type="array">
+  Array of error objects with detailed information
+  
+  <Expandable>
+    <ParamField path="message" type="string">
+      Human-readable description of the error
+    </ParamField>
+    
+    <ParamField path="field" type="string">
+      The specific field that caused the error (for validation errors)
+    </ParamField>
+    
+    <ParamField path="status" type="integer">
+      HTTP status code
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="message" type="string">
+  Top-level error message summarizing the issue
+</ParamField>
+
+## Common error scenarios
+
+### Authentication errors
+
+<CodeGroup>
+```json 401 - Invalid token
+{
+  "errors": [
+    {
+      "message": "Invalid token",
+      "status": 401
+    }
+  ],
+  "message": "Invalid token"
+}
+```
+
+```json 401 - Expired token
+{
+  "errors": [
+    {
+      "message": "Token has expired",
+      "status": 401
+    }
+  ],
+  "message": "Token has expired"
+}
+```
+
+```json 403 - Insufficient permissions
+{
+  "errors": [
+    {
+      "message": "Forbidden: You do not have permission to access this resource",
+      "status": 403
+    }
+  ],
+  "message": "Forbidden"
+}
+```
+</CodeGroup>
+
+### Validation errors
+
+<CodeGroup>
+```json 400 - Missing required field
+{
+  "errors": [
+    {
+      "message": "Missing required field: service_type",
+      "field": "service_type",
+      "status": 400
+    }
+  ],
+  "message": "Bad request"
+}
+```
+
+```json 400 - Invalid field value
+{
+  "errors": [
+    {
+      "message": "Invalid cloud region: invalid-region-1",
+      "field": "cloud",
+      "status": 400
+    }
+  ],
+  "message": "Bad request"
+}
+```
+
+```json 409 - Resource already exists
+{
+  "errors": [
+    {
+      "message": "Service with name 'my-service' already exists",
+      "status": 409
+    }
+  ],
+  "message": "Conflict"
+}
+```
+</CodeGroup>
+
+### Resource errors
+
+<CodeGroup>
+```json 404 - Project not found
+{
+  "errors": [
+    {
+      "message": "Project 'non-existent-project' not found",
+      "status": 404
+    }
+  ],
+  "message": "Not found"
+}
+```
+
+```json 404 - Service not found
+{
+  "errors": [
+    {
+      "message": "Service 'my-service' not found in project 'my-project'",
+      "status": 404
+    }
+  ],
+  "message": "Not found"
+}
+```
+</CodeGroup>
+
+### Rate limiting
+
+```json 429 - Too many requests
+{
+  "errors": [
+    {
+      "message": "Rate limit exceeded. Please retry after 60 seconds",
+      "status": 429
+    }
+  ],
+  "message": "Too many requests"
+}
+```
+
+## Error handling best practices
+
+<AccordionGroup>
+  <Accordion title="Implement retry logic">
+    Implement exponential backoff for retrying failed requests, especially for 429 (rate limit) and 5xx (server error) responses.
+
+    ```python
+    import time
+    import requests
+
+    def make_request_with_retry(url, headers, max_retries=3):
+        for attempt in range(max_retries):
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                return response.json()
+            
+            if response.status_code == 429 or response.status_code >= 500:
+                wait_time = 2 ** attempt  # Exponential backoff
+                time.sleep(wait_time)
+                continue
+            
+            # For other errors, don't retry
+            response.raise_for_status()
+        
+        raise Exception(f"Max retries ({max_retries}) exceeded")
+    ```
+  </Accordion>
+
+  <Accordion title="Validate before sending">
+    Validate request parameters client-side before making API calls to avoid unnecessary round trips and rate limit consumption.
+  </Accordion>
+
+  <Accordion title="Log error details">
+    Log complete error responses including status codes, messages, and affected fields for easier troubleshooting.
+  </Accordion>
+
+  <Accordion title="Handle errors gracefully">
+    Provide meaningful error messages to end users while logging technical details for debugging.
+
+    ```python
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        error_data = e.response.json()
+        print(f"API Error: {error_data.get('message')}")
+        for error in error_data.get('errors', []):
+            print(f"  - {error.get('message')}")
+        raise
+    ```
+  </Accordion>
+
+  <Accordion title="Check service status">
+    When encountering persistent 5xx errors, check the [Aiven status page](https://status.aiven.io) for ongoing incidents.
+  </Accordion>
+
+  <Accordion title="Use idempotency keys">
+    For critical operations, implement idempotency to safely retry requests without duplicating resources.
+  </Accordion>
+</AccordionGroup>
+
+## Rate limiting details
+
+The Aiven API implements rate limiting to ensure fair usage:
+
+- Rate limits are applied per authentication token
+- Different endpoints may have different rate limits
+- When rate limited, wait for the time specified in the error message
+- Implement exponential backoff starting with a 1-second delay
+
+<CodeGroup>
+```python Python retry example
+import time
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+def create_session_with_retries():
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=1,  # Wait 1, 2, 4 seconds
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    return session
+
+session = create_session_with_retries()
+response = session.get(
+    "https://api.aiven.io/v1/project",
+    headers={"Authorization": "aivenv1 YOUR_TOKEN"}
+)
+```
+
+```javascript JavaScript retry example
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.status === 429 || response.status >= 500) {
+        const waitTime = Math.pow(2, i) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+    }
+  }
+}
+```
+</CodeGroup>
+
+## Getting help
+
+If you encounter persistent errors or unexpected behavior:
+
+1. Check the [full API documentation](https://api.aiven.io/doc/) for endpoint-specific details
+2. Review the [Aiven status page](https://status.aiven.io) for service incidents
+3. Search the [Aiven community forum](https://aiven.io/community) for similar issues
+4. Contact [Aiven support](https://aiven.io/support) with error details and request IDs
+
+## Related resources
+
+- [Authentication](/api-reference/authentication)
+- [API Overview](/api-reference/overview)
+- [Full API reference](https://api.aiven.io/doc/)

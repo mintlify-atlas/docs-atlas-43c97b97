@@ -1,0 +1,484 @@
+---
+title: Organizations, Units, and Projects
+description: Learn how to organize your Aiven infrastructure using organizations, organizational units, and projects.
+---
+
+The Aiven Platform uses a three-tier hierarchy to help you efficiently and securely organize your services and manage access. This structure provides flexibility while maintaining centralized control over billing, authentication, and security policies.
+
+## Hierarchy overview
+
+The Aiven Platform organizes resources into three levels:
+
+<CardGroup cols={3}>
+  <Card title="Organization" icon="building">
+    Top-level entity containing all projects and services
+  </Card>
+  <Card title="Organizational Unit" icon="folder-tree">
+    Optional grouping of projects within an organization
+  </Card>
+  <Card title="Project" icon="folder">
+    Collection of services sharing network and access settings
+  </Card>
+</CardGroup>
+
+### Example structure
+
+```
+Acme Corporation (Organization)
+├── Engineering Unit
+│   ├── backend-dev (Project)
+│   │   ├── PostgreSQL
+│   │   └── Redis
+│   └── backend-prod (Project)
+│       ├── PostgreSQL
+│       └── Redis
+├── Analytics Unit  
+│   └── data-warehouse (Project)
+│       ├── ClickHouse
+│       └── Kafka
+└── finance-prod (Project)
+    └── PostgreSQL
+```
+
+<Note>
+Watch our [video overview](https://www.youtube.com/watch?v=axhcppn6W2c) on organizations, units, and projects.
+</Note>
+
+## Organizations
+
+When you sign up for Aiven, an organization is automatically created for you. Organizations are the top-level entity and provide centralized management for:
+
+### Centralized settings
+
+<CardGroup cols={2}>
+  <Card title="Billing" icon="credit-card">
+    **Managed only at organization level**
+    
+    - Billing groups shared across all units and projects
+    - Payment methods and invoices
+    - Billing addresses and tax information
+    - Cannot be shared between organizations
+  </Card>
+  
+  <Card title="Users & Groups" icon="users">
+    **Organization-wide management**
+    
+    - Organization users and application users
+    - User groups for access management
+    - Roles and permissions
+    - User lifecycle management
+  </Card>
+  
+  <Card title="Authentication" icon="key">
+    **Security policies**
+    
+    - Verified domains
+    - SAML identity providers (IdPs)
+    - Authentication policies
+    - Two-factor authentication requirements
+  </Card>
+  
+  <Card title="Support" icon="headset">
+    **Support tier**
+    
+    - Applies to entire organization
+    - Cannot be shared between organizations
+    - Business, Advanced, or Premium tiers
+  </Card>
+</CardGroup>
+
+### Managing organizations
+
+<Steps>
+  <Step title="View organization details">
+    Click **Admin** → **Organization** in the Aiven Console
+  </Step>
+  <Step title="Organization settings">
+    Configure organization name, domains, identity providers, and authentication policies
+  </Step>
+  <Step title="Best practice">
+    It's recommended to have one Aiven organization per company for simplified management
+  </Step>
+</Steps>
+
+<Note>
+Only **Super Admin** can delete organizations or rename them. **Organization Admin** has full access except for these operations.
+</Note>
+
+## Organizational units
+
+Organizational units are collections of projects that help you group resources by department, environment, or any logical grouping.
+
+### Common use cases
+
+<CardGroup cols={2}>
+  <Card title="By Department" icon="building">
+    - Finance
+    - Engineering
+    - Marketing
+    - Operations
+  </Card>
+  <Card title="By Environment" icon="layer-group">
+    - Development
+    - Testing/QA
+    - Staging
+    - Production
+  </Card>
+</CardGroup>
+
+### Unit characteristics
+
+- **Flat structure** - Units cannot be nested within other units
+- **Inherited settings** - Organization-level settings apply to all units
+- **Access control** - Grant roles and permissions at the unit level
+- **Unlimited units** - Create as many units as needed
+
+### Creating organizational units
+
+Using the Aiven CLI:
+
+```bash
+# Create an organizational unit
+avn organization unit create \
+  --organization-id <ORG_ID> \
+  --unit-name "Production"
+
+# List all units in an organization  
+avn organization unit list --organization-id <ORG_ID>
+
+# Delete an organizational unit
+avn organization unit delete \
+  --organization-id <ORG_ID> \
+  --unit-id <UNIT_ID>
+```
+
+<Warning>
+You cannot configure verified domains, billing groups, or identity providers at the unit level. These are managed only at the organization level.
+</Warning>
+
+## Projects
+
+Projects are collections of services that share common network and access settings. Projects can be created directly in an organization or within organizational units.
+
+### Project benefits
+
+- **Service grouping** - Organize related services together
+- **Uniform security** - Apply consistent network settings across all services
+- **Access control** - Grant team members project-level access
+- **Billing assignment** - Assign projects to billing groups
+
+### Project organization patterns
+
+<Tabs>
+  <Tab title="Single Project">
+    **Best for:** Small teams or simple deployments
+    
+    One project with all services distinguished by naming:
+    ```
+    my-project
+    ├── postgres-prod
+    ├── postgres-staging
+    ├── redis-prod
+    └── redis-staging
+    ```
+  </Tab>
+  
+  <Tab title="Environment-Based">
+    **Best for:** Separating environments clearly
+    
+    Each project represents a deployment environment:
+    ```
+    dev (Project)
+    ├── postgres
+    └── redis
+    
+    qa (Project)  
+    ├── postgres
+    └── redis
+    
+    production (Project)
+    ├── postgres
+    └── redis
+    ```
+  </Tab>
+  
+  <Tab title="Application-Based">
+    **Best for:** Microservices or multiple applications
+    
+    Each project contains services for one application:
+    ```
+    customer-api-prod (Project)
+    ├── postgres
+    └── redis
+    
+    analytics-pipeline-prod (Project)
+    ├── kafka
+    └── clickhouse
+    ```
+  </Tab>
+</Tabs>
+
+### Managing projects
+
+<Steps>
+  <Step title="Create a project">
+    ```bash
+    # Using Aiven CLI
+    avn project create \
+      --organization-id <ORG_ID> \
+      --project my-project
+    
+    # Create in an organizational unit
+    avn project create \
+      --organization-id <ORG_ID> \
+      --parent-id <UNIT_ID> \
+      --project my-project
+    ```
+  </Step>
+  
+  <Step title="Assign billing group">
+    ```bash
+    avn project update \
+      --project my-project \
+      --billing-group-id <BILLING_GROUP_ID>
+    ```
+  </Step>
+  
+  <Step title="Configure network settings">
+    Set up VPCs, IP allowlists, and other network configurations that apply to all services in the project
+  </Step>
+  
+  <Step title="Grant access">
+    Assign users and groups project-level roles and permissions
+  </Step>
+</Steps>
+
+### Moving projects
+
+You can move projects between organizational units or directly under the organization:
+
+```bash
+# Move project to an organizational unit
+avn project move \
+  --project my-project \
+  --target-organization-id <ORG_ID> \
+  --target-parent-id <UNIT_ID>
+
+# Move project directly under organization
+avn project move \
+  --project my-project \
+  --target-organization-id <ORG_ID>
+```
+
+<Note>
+Moving projects does not affect running services. The project retains its billing group assignment.
+</Note>
+
+## Best practices
+
+### Small organizations (1-10 services)
+
+<Steps>
+  <Step title="Keep it simple">
+    Consolidate all projects within one organization without organizational units
+  </Step>
+  <Step title="Use naming conventions">
+    Include environment in project names: `backend-dev`, `backend-prod`
+  </Step>
+  <Step title="Project-level permissions">
+    Grant access at the project level to control who can access which services
+  </Step>
+</Steps>
+
+### Medium organizations (10-50 services)
+
+<Steps>
+  <Step title="Use organizational units">
+    Group projects by department or environment using organizational units
+  </Step>
+  <Step title="Create user groups">
+    Assign permissions to groups instead of individual users
+  </Step>
+  <Step title="Environment separation">
+    Separate development and production into different units for clear boundaries
+  </Step>
+</Steps>
+
+### Large organizations (50+ services)
+
+<Steps>
+  <Step title="Mandatory organizational units">
+    Keep all projects in organizational units, none directly under the organization
+  </Step>
+  <Step title="Standardize naming">
+    Establish clear naming conventions for units and projects across the organization
+  </Step>
+  <Step title="Group-based access">
+    Add all users to groups representing roles. Assign permissions at project or unit level
+  </Step>
+  <Step title="Restrict organization admins">
+    Limit the number of super admins and organization admins for security
+  </Step>
+  <Step title="Granular billing permissions">
+    Use billing-specific permissions to give finance team access without full admin rights
+  </Step>
+  <Step title="Domain verification">
+    Verify your domain and configure authentication policies
+  </Step>
+  <Step title="Use Infrastructure as Code">
+    Manage complex infrastructure with [Aiven Terraform Provider](/docs/tools/terraform)
+    
+    ```hcl
+    resource "aiven_organizational_unit" "prod" {
+      name   = "Production"
+      parent_id = aiven_organization.main.id
+    }
+    
+    resource "aiven_project" "backend_prod" {
+      project    = "backend-prod"
+      parent_id  = aiven_organizational_unit.prod.id
+    }
+    ```
+  </Step>
+</Steps>
+
+## Bring Your Own Cloud (BYOC)
+
+For organizations with specific compliance or infrastructure requirements, Aiven offers BYOC deployment:
+
+### What is BYOC?
+
+BYOC allows you to run Aiven-managed services in your own cloud account while maintaining the Aiven user experience.
+
+<CardGroup cols={2}>
+  <Card title="Benefits" icon="check">
+    - Use existing cloud commitments and discounts
+    - Enhanced network visibility and control
+    - Meet strict compliance requirements
+    - Audit network metadata in your account
+  </Card>
+  <Card title="Requirements" icon="list">
+    - AWS or Google Cloud account
+    - Commitment deal with Aiven
+    - Advanced or Premium support tier
+    - Custom pricing arrangement
+  </Card>
+</CardGroup>
+
+### BYOC architecture
+
+BYOC services run in custom clouds within your cloud provider account:
+
+```
+Your AWS/GCP Account
+└── Custom Cloud (BYOC VPC)
+    ├── Bastion Host (private deployments)
+    ├── Service VMs (Aiven-managed)
+    └── S3/GCS Buckets (backups & cold storage)
+    
+Aiven Management Plane
+└── Service orchestration and monitoring
+```
+
+### Deployment models
+
+<Tabs>
+  <Tab title="Private Deployment">
+    Services in private subnet, accessed via bastion host:
+    - Service VMs not publicly accessible
+    - Aiven connects through bastion from static IP
+    - Most secure option
+  </Tab>
+  <Tab title="Public Deployment">
+    Services in public subnet with internet gateway:
+    - Direct access from Aiven management plane
+    - Use IP filtering to restrict access
+    - Simpler architecture
+  </Tab>
+</Tabs>
+
+### Getting started with BYOC
+
+<Steps>
+  <Step title="Contact Aiven sales">
+    Schedule a call to discuss your use case and requirements
+  </Step>
+  <Step title="Enable BYOC">
+    Aiven enables BYOC capability for your organization
+  </Step>
+  <Step title="Create custom cloud">
+    ```bash
+    # Generate infrastructure template
+    avn byoc create \
+      --organization-id <ORG_ID> \
+      --deployment-model private \
+      --cloud-provider aws \
+      --region us-east-1
+    ```
+  </Step>
+  <Step title="Deploy template">
+    Apply the generated CloudFormation (AWS) or Terraform (GCP) template in your cloud account
+  </Step>
+  <Step title="Deploy services">
+    Create services in your custom cloud like any other Aiven service
+  </Step>
+</Steps>
+
+<Warning>
+BYOC adds complexity to service management, key management, and networking. Consider standard Aiven deployment or Enhanced Compliance Environment first. Contact your account team to determine the best fit.
+</Warning>
+
+## API reference
+
+Manage organizations, units, and projects programmatically:
+
+<CodeGroup>
+```bash List organizations
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/organization
+```
+
+```bash Create organizational unit
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production",
+    "parent_id": "org123"
+  }' \
+  https://api.aiven.io/v1/organization/{org_id}/unit
+```
+
+```bash Create project
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project": "my-project",
+    "parent_id": "unit123"
+  }' \
+  https://api.aiven.io/v1/organization/{org_id}/projects
+```
+
+```bash Get project details
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Billing & Payment" icon="credit-card" href="/platform/billing-and-payment">
+    Configure billing groups and payment methods
+  </Card>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Set up team members and access control
+  </Card>
+  <Card title="Authentication" icon="lock" href="/platform/authentication">
+    Configure SSO and authentication policies
+  </Card>
+  <Card title="VPC Networking" icon="network-wired" href="/platform/vpc-and-networking">
+    Set up private connectivity with VPC peering
+  </Card>
+</CardGroup>

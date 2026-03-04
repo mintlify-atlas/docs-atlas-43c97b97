@@ -1,122 +1,120 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Aiven",
+  "theme": "palm",
+  "mode": "custom",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#fb513b",
+    "light": "#fbb889",
+    "dark": "#fc6f0b"
   },
-  "favicon": "/favicon.svg",
+
+  "logo": {
+    "light": "https://media.brand.dev/ed8edef4-e99c-4e47-95a4-2c5e8d92f9f1.svg",
+    "dark": "https://media.brand.dev/ed8edef4-e99c-4e47-95a4-2c5e8d92f9f1.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/aiven/aiven-docs"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/aiven/aiven-docs"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "marketplace-setup"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Platform",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "platform/overview",
+              "platform/organizations-and-projects",
+              "platform/billing-and-payment",
+              "platform/users-and-permissions",
+              "platform/authentication",
+              "platform/vpc-and-networking",
+              "platform/security",
+              "platform/monitoring-and-logs",
+              "platform/service-integrations"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Services",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "services/overview",
+              "services/kafka",
+              "services/postgresql",
+              "services/mysql",
+              "services/opensearch",
+              "services/clickhouse",
+              "services/flink",
+              "services/valkey",
+              "services/dragonfly",
+              "services/grafana",
+              "services/metrics"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Developer Tools",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "tools/overview",
+              "tools/console",
+              "tools/api",
+              "tools/cli",
+              "tools/terraform",
+              "tools/kubernetes",
+              "tools/query-optimizer",
+              "tools/mcp-server"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/cloudwatch",
+              "integrations/datadog",
+              "integrations/prometheus",
+              "integrations/rsyslog",
+              "integrations/elasticsearch"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Getting Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/overview",
+              "api-reference/authentication",
+              "api-reference/errors"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Endpoints",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/projects",
+              "api-reference/services",
+              "api-reference/users",
+              "api-reference/billing"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

@@ -1,0 +1,219 @@
+---
+title: Datadog integration
+description: Send metrics and logs from Aiven services to Datadog for comprehensive monitoring, alerting, and analysis.
+---
+
+[Datadog](https://www.datadoghq.com/) is a monitoring and analytics platform that allows you to keep an eye on all aspects of your cloud estate. Aiven has integrations that make it easy to include an Aiven service in your Datadog dashboards.
+
+## Integration types
+
+Aiven supports two types of Datadog integrations:
+
+- **Datadog Metrics** - Send service metrics directly to Datadog
+- **Datadog Logs** - Forward service logs via Rsyslog integration
+
+## Datadog metrics integration
+
+### Prerequisites
+
+- A Datadog account
+- A Datadog [API key](https://docs.datadoghq.com/account_management/api-app-keys/)
+- A running Aiven service
+
+### Add Datadog integration endpoint
+
+You can use the Datadog integration endpoint for multiple services.
+
+<Steps>
+  <Step title="Access integration endpoints">
+    In your Aiven project, click **Integration endpoints**.
+  </Step>
+  
+  <Step title="Select Datadog">
+    Select **Datadog** and then **Create new** or **Add new endpoint**.
+  </Step>
+  
+  <Step title="Configure endpoint">
+    Enter the following details:
+    
+    - **Endpoint name** - Reference name for this integration
+    - **API key** - Your Datadog API key
+    - **Site** - Your Datadog site (shown in your [Datadog website URL](https://docs.datadoghq.com/getting_started/site/))
+    - **Custom tags** - (Optional) Add [custom tags](/docs/integrations/datadog/add-custom-tags-to-datadog) to send with metrics
+  </Step>
+  
+  <Step title="Save endpoint">
+    Click **Add endpoint** to save the configuration.
+  </Step>
+</Steps>
+
+### Enable metrics integration on a service
+
+<Steps>
+  <Step title="Open service integrations">
+    In your service, click **Integrations**.
+  </Step>
+  
+  <Step title="Select Datadog Metrics">
+    In the **Endpoint integrations** section, select **Datadog Metrics**.
+  </Step>
+  
+  <Step title="Choose endpoint">
+    Select your Datadog integration endpoint and click **Enable**.
+  </Step>
+  
+  <Step title="View metrics in Datadog">
+    Metrics data will appear on your Datadog dashboard.
+  </Step>
+</Steps>
+
+<Note>
+For Aiven for Apache Kafka services, you can [customize the metrics sent to Datadog](/docs/products/kafka/howto/datadog-customised-metrics).
+</Note>
+
+### Custom tags
+
+The Datadog integration supports adding tags to your metrics data:
+
+- **Global tags** - Apply to all metrics from all services using the endpoint
+- **Per-service tags** - Apply only to metrics from specific services
+
+Tags enable better filtering, grouping, and analysis in Datadog dashboards.
+
+## Datadog logs integration
+
+The Rsyslog integration is used to send service logs to Datadog.
+
+### Prerequisites
+
+- A Datadog [API key](https://docs.datadoghq.com/account_management/api-app-keys/)
+- A running Aiven service
+
+### Add Syslog integration endpoint for Datadog
+
+<Steps>
+  <Step title="Access integration endpoints">
+    In your Aiven project, click **Integration endpoints**.
+  </Step>
+  
+  <Step title="Select Syslog">
+    Select **Syslog** and then **Create new** or **Add new endpoint**.
+  </Step>
+  
+  <Step title="Configure endpoint name">
+    Enter a descriptive **Endpoint name** for this Datadog logs integration.
+  </Step>
+  
+  <Step title="Configure server">
+    Set the **Server** based on your Datadog region:
+    
+    - US region: `intake.logs.datadoghq.com`
+    - EU region: `tcp-intake.logs.datadoghq.eu`
+  </Step>
+  
+  <Step title="Configure port">
+    Set the **Port** based on your Datadog region:
+    
+    - US region: `10516`
+    - EU region: `443`
+  </Step>
+  
+  <Step title="Enable TLS">
+    Enable **TLS** for secure log transmission.
+  </Step>
+  
+  <Step title="Set format to custom">
+    Set the **Format** to `custom`.
+  </Step>
+  
+  <Step title="Configure log template">
+    In the **Log Template** field, enter:
+    
+    ```text
+    DATADOG_API_KEY <%pri%>1 %timestamp:::date-rfc3339% %HOSTNAME%.AIVEN_PROJECT_NAME %app-name% - - - %msg%
+    ```
+    
+    Replace:
+    - `DATADOG_API_KEY` - Your Datadog API key
+    - `AIVEN_PROJECT_NAME` - Your Aiven project name
+    
+    <Note>
+    Datadog correlates metrics and logs by hostname. The integration appends the project name to the hostname to disambiguate between services with the same name in different projects. Without the project name, no log data is lost.
+    </Note>
+    
+    Don't edit the values surrounded by `%`, such as `%msg%`, as these are used in constructing the log line.
+    
+    Example:
+    ```text
+    01234567890123456789abcdefabcdef <%pri%>1 %timestamp:::date-rfc3339% %HOSTNAME%.example-project %app-name% - - - %msg%
+    ```
+  </Step>
+  
+  <Step title="Save endpoint">
+    Click **Create** to save the endpoint.
+  </Step>
+</Steps>
+
+### Enable logs integration on a service
+
+<Steps>
+  <Step title="Open service integrations">
+    In your service, click **Integrations**.
+  </Step>
+  
+  <Step title="Select Rsyslog">
+    In the **Endpoint integrations** section, select **Rsyslog**.
+  </Step>
+  
+  <Step title="Choose endpoint">
+    Select the integration endpoint you created and click **Enable**.
+  </Step>
+  
+  <Step title="View logs in Datadog">
+    Logs will appear in your Datadog Logs dashboard.
+  </Step>
+</Steps>
+
+## Regional configuration
+
+Datadog operates in multiple regions with different endpoints:
+
+| Region | Metrics Site | Logs Server | Logs Port |
+|--------|--------------|-------------|------------|
+| US | `datadoghq.com` | `intake.logs.datadoghq.com` | `10516` |
+| EU | `datadoghq.eu` | `tcp-intake.logs.datadoghq.eu` | `443` |
+| US3 | `us3.datadoghq.com` | - | - |
+| US5 | `us5.datadoghq.com` | - | - |
+| AP1 | `ap1.datadoghq.com` | - | - |
+
+Refer to the [Datadog site documentation](https://docs.datadoghq.com/getting_started/site/) to determine your region.
+
+## Troubleshooting
+
+### Metrics not appearing
+
+- Verify your Datadog API key is correct and active
+- Confirm the Datadog site matches your account region
+- Check that the integration is enabled on your service
+- Allow a few minutes for initial data to appear
+
+### Logs not streaming
+
+- Ensure TLS is enabled in the Rsyslog configuration
+- Verify the server and port match your Datadog region
+- Confirm the log template includes your Datadog API key
+- Check that the Rsyslog integration is enabled on your service
+
+### Hostname correlation issues
+
+- Include the project name in the hostname for proper correlation
+- Verify custom tags are configured correctly
+- Check that service names are unique or properly tagged
+
+## Related resources
+
+- [Monitor PgBouncer with Datadog](/docs/products/postgresql/howto/monitor-pgbouncer-with-datadog)
+- [Enable database monitoring with Datadog](/docs/products/postgresql/howto/monitor-database-with-datadog)
+- [Customize Kafka metrics for Datadog](/docs/products/kafka/howto/datadog-customised-metrics)
+- [Add custom tags to Datadog](/docs/integrations/datadog/add-custom-tags-to-datadog)
+- [Datadog documentation](https://docs.datadoghq.com/)

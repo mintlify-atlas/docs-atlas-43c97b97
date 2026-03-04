@@ -1,0 +1,390 @@
+---
+title: SQL Query Optimizer
+description: Use Aiven's AI-powered SQL query optimizer to get optimization recommendations for PostgreSQL and MySQL queries.
+---
+
+Aiven's **SQL query optimizer** uses artificial intelligence to analyze and optimize your PostgreSQL and MySQL queries. Get instant recommendations for query improvements and index suggestions without running the queries against your production database.
+
+<Note>
+This is a standalone tool for ad-hoc query optimization. If you're running a PostgreSQL or MySQL service on Aiven, the platform automatically suggests optimizations for slow queries through the AI Insights feature.
+</Note>
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Pre-deployment optimization" icon="shield-check">
+    Optimize queries before deploying to production
+  </Card>
+  
+  <Card title="Performance troubleshooting" icon="magnifying-glass-chart">
+    Identify bottlenecks in slow-running queries
+  </Card>
+  
+  <Card title="Index recommendations" icon="database">
+    Get AI-powered suggestions for optimal indexes
+  </Card>
+  
+  <Card title="Query learning" icon="graduation-cap">
+    Understand how to write more efficient SQL
+  </Card>
+</CardGroup>
+
+## How it works
+
+The query optimizer analyzes your SQL query structure, table schemas, and statistics to provide:
+
+- **Optimized query**: Rewritten query with better performance characteristics
+- **Index recommendations**: Suggested indexes to improve query execution
+- **Execution analysis**: Explanation of potential performance issues
+- **Best practices**: General SQL optimization advice
+
+## Getting started
+
+<Steps>
+  <Step title="Access the optimizer">
+    Navigate to the [Aiven Console](https://console.aiven.io) and click **Tools** > **SQL query optimizer**
+  </Step>
+  
+  <Step title="Select database type">
+    Choose your database type and version:
+    - PostgreSQL (versions 12-16)
+    - MySQL (versions 8.0+)
+  </Step>
+  
+  <Step title="Enter your query">
+    Paste the SQL query you want to optimize
+  </Step>
+  
+  <Step title="Add table information (optional)">
+    For better recommendations, provide your table structure and statistics:
+    
+    <Tabs>
+      <Tab title="PostgreSQL">
+        Run this query on your database:
+        
+        ```sql
+        SELECT 
+          schemaname,
+          tablename,
+          attname,
+          n_distinct,
+          correlation
+        FROM pg_stats
+        WHERE tablename IN ('your_table_1', 'your_table_2');
+        ```
+      </Tab>
+      
+      <Tab title="MySQL">
+        Run this query on your database:
+        
+        ```sql
+        SELECT 
+          TABLE_SCHEMA,
+          TABLE_NAME,
+          COLUMN_NAME,
+          CARDINALITY,
+          DATA_TYPE
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_NAME IN ('your_table_1', 'your_table_2');
+        ```
+      </Tab>
+    </Tabs>
+    
+    Paste the output into the **Query output** field
+  </Step>
+  
+  <Step title="Get recommendations">
+    Click **Optimize** to receive your optimization report
+  </Step>
+</Steps>
+
+## Example: Optimizing a PostgreSQL query
+
+### Original query
+
+```sql
+SELECT 
+  orders.id,
+  orders.order_date,
+  customers.name,
+  customers.email
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+WHERE orders.order_date >= '2024-01-01'
+  AND orders.status = 'completed'
+  AND customers.country = 'US'
+ORDER BY orders.order_date DESC;
+```
+
+### Optimization recommendations
+
+The optimizer might suggest:
+
+<AccordionGroup>
+  <Accordion title="Optimized query">
+    ```sql
+    SELECT 
+      o.id,
+      o.order_date,
+      c.name,
+      c.email
+    FROM orders o
+    INNER JOIN customers c ON o.customer_id = c.id
+    WHERE c.country = 'US'
+      AND o.order_date >= '2024-01-01'
+      AND o.status = 'completed'
+    ORDER BY o.order_date DESC;
+    ```
+    
+    **Changes:**
+    - Table aliases for cleaner syntax
+    - Reordered WHERE conditions (most selective first)
+    - Explicit INNER JOIN for clarity
+  </Accordion>
+  
+  <Accordion title="Index recommendations">
+    ```sql
+    -- Composite index for orders table
+    CREATE INDEX idx_orders_status_date 
+    ON orders(status, order_date DESC) 
+    WHERE status = 'completed';
+    
+    -- Index for customers country lookup
+    CREATE INDEX idx_customers_country 
+    ON customers(country) 
+    INCLUDE (name, email);
+    
+    -- Ensure foreign key is indexed
+    CREATE INDEX idx_orders_customer_id 
+    ON orders(customer_id);
+    ```
+  </Accordion>
+  
+  <Accordion title="Analysis">
+    **Potential issues identified:**
+    
+    1. **Missing indexes**: The query performs sequential scans on large tables
+    2. **Join order**: Could benefit from pushing down the country filter
+    3. **Sort operation**: ORDER BY on unindexed column requires expensive sort
+    
+    **Estimated improvement**: 85% reduction in query execution time
+  </Accordion>
+</AccordionGroup>
+
+## Example: Optimizing a MySQL query
+
+### Original query
+
+```sql
+SELECT 
+  p.product_name,
+  p.price,
+  COUNT(*) as order_count,
+  SUM(oi.quantity) as total_quantity
+FROM products p
+LEFT JOIN order_items oi ON p.id = oi.product_id
+WHERE p.category = 'electronics'
+  AND p.price > 100
+GROUP BY p.id, p.product_name, p.price
+HAVING COUNT(*) > 10
+ORDER BY order_count DESC;
+```
+
+### Optimization recommendations
+
+<AccordionGroup>
+  <Accordion title="Optimized query">
+    ```sql
+    SELECT 
+      p.product_name,
+      p.price,
+      COUNT(oi.id) as order_count,
+      COALESCE(SUM(oi.quantity), 0) as total_quantity
+    FROM products p
+    LEFT JOIN order_items oi ON p.id = oi.product_id
+    WHERE p.category = 'electronics'
+      AND p.price > 100
+    GROUP BY p.id
+    HAVING COUNT(oi.id) > 10
+    ORDER BY order_count DESC;
+    ```
+    
+    **Changes:**
+    - COUNT(oi.id) instead of COUNT(*) for accuracy with LEFT JOIN
+    - COALESCE for NULL handling
+    - Simplified GROUP BY (only p.id needed with ONLY_FULL_GROUP_BY)
+  </Accordion>
+  
+  <Accordion title="Index recommendations">
+    ```sql
+    -- Covering index for products filter
+    CREATE INDEX idx_products_category_price 
+    ON products(category, price, product_name);
+    
+    -- Index for order_items join
+    CREATE INDEX idx_order_items_product 
+    ON order_items(product_id, quantity);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Understanding the optimization report
+
+The optimization report includes several sections:
+
+### Query improvements
+
+Suggested changes to your SQL query:
+
+- **Syntax optimization**: More efficient SQL constructs
+- **Join order**: Optimal table join sequence
+- **Predicate pushdown**: Moving filters earlier in execution
+- **Subquery elimination**: Converting subqueries to joins
+
+### Index recommendations
+
+Proposed indexes to speed up query execution:
+
+- **Single-column indexes**: For simple equality checks
+- **Composite indexes**: For multiple column filters
+- **Covering indexes**: Include additional columns to avoid table lookups
+- **Partial indexes**: For queries with constant WHERE conditions
+
+### Performance analysis
+
+- **Bottleneck identification**: Where the query spends most time
+- **Cardinality estimates**: Expected number of rows at each step
+- **Cost analysis**: Relative cost of different operations
+- **Alternative approaches**: Different ways to achieve the same result
+
+## Best practices for query optimization
+
+<AccordionGroup>
+  <Accordion title="Provide table schema">
+    The more information you provide, the better the recommendations:
+    
+    - Table structures (column names and types)
+    - Row counts
+    - Data distribution statistics
+    - Existing indexes
+    
+    This helps the AI understand your data characteristics.
+  </Accordion>
+  
+  <Accordion title="Start with problematic queries">
+    Focus on queries that:
+    
+    - Take longer than 1 second to execute
+    - Run frequently (hundreds or thousands of times per minute)
+    - Scan large tables
+    - Use complex joins or subqueries
+  </Accordion>
+  
+  <Accordion title="Test recommendations">
+    Always test optimizations in a non-production environment:
+    
+    1. Apply suggested indexes
+    2. Run EXPLAIN ANALYZE to compare execution plans
+    3. Measure actual performance improvements
+    4. Monitor resource usage
+  </Accordion>
+  
+  <Accordion title="Consider trade-offs">
+    Some optimizations have costs:
+    
+    - **Indexes**: Speed up reads but slow down writes
+    - **Denormalization**: Faster queries but more storage
+    - **Materialized views**: Quick access but stale data
+    
+    Balance performance with your application's needs.
+  </Accordion>
+</AccordionGroup>
+
+## Limitations
+
+<Warning>
+The query optimizer has some limitations:
+
+- **No query execution**: Recommendations are based on static analysis, not actual execution
+- **Database-specific features**: May not account for all vendor-specific optimizations
+- **Data distribution**: Cannot see actual data patterns without statistics
+- **Workload context**: Doesn't know about concurrent queries or system load
+
+Always validate recommendations against your specific environment.
+</Warning>
+
+## AI Database Optimizer for services
+
+If you're running Aiven for PostgreSQL or MySQL, you get automatic optimization suggestions:
+
+<Tabs>
+  <Tab title="PostgreSQL">
+    The [AI Database Optimizer for PostgreSQL](https://aiven.io/docs/products/postgresql/howto/ai-insights) automatically:
+    
+    - Monitors slow queries
+    - Analyzes execution plans
+    - Suggests index improvements
+    - Provides optimization recommendations
+    
+    Access via **AI Insights** in your service console.
+  </Tab>
+  
+  <Tab title="MySQL">
+    The [AI Database Optimizer for MySQL](https://aiven.io/docs/products/mysql/howto/ai-insights) automatically:
+    
+    - Tracks query performance
+    - Identifies slow queries
+    - Recommends index additions
+    - Suggests query rewrites
+    
+    Access via **AI Insights** in your service console.
+  </Tab>
+</Tabs>
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Is my query data sent to third parties?">
+    Query text and structure is analyzed by AI systems, but:
+    
+    - Actual data values are not required or stored
+    - Query analysis happens in secure, isolated environments
+    - No query content is shared with external parties
+    - See Aiven's [privacy policy](https://aiven.io/privacy) for details
+  </Accordion>
+  
+  <Accordion title="Can I use this for other databases?">
+    Currently, the standalone optimizer supports:
+    
+    - PostgreSQL (versions 12, 13, 14, 15, 16)
+    - MySQL (versions 8.0, 8.1, 8.2)
+    
+    Other database engines are not supported at this time.
+  </Accordion>
+  
+  <Accordion title="How accurate are the recommendations?">
+    Accuracy depends on:
+    
+    - Query complexity
+    - Quality of provided statistics
+    - Database version and configuration
+    - Data distribution patterns
+    
+    Always test in a non-production environment first.
+  </Accordion>
+  
+  <Accordion title="Can I optimize stored procedures?">
+    Yes, paste the SQL from your stored procedure. However:
+    
+    - Procedural logic (IF/WHILE statements) isn't optimized
+    - Focus on individual SELECT/UPDATE/DELETE statements
+    - Consider the procedure's overall structure separately
+  </Accordion>
+</AccordionGroup>
+
+## Related resources
+
+- [AI Database Optimizer for PostgreSQL](https://aiven.io/docs/products/postgresql/howto/ai-insights)
+- [AI Database Optimizer for MySQL](https://aiven.io/docs/products/mysql/howto/ai-insights)
+- [PostgreSQL Query Optimization Guide](https://www.postgresql.org/docs/current/performance-tips.html)
+- [MySQL Query Optimization Guide](https://dev.mysql.com/doc/refman/8.0/en/optimization.html)

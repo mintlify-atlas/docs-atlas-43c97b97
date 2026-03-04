@@ -1,0 +1,491 @@
+---
+title: Aiven for Dragonfly
+description: High-scale, Redis-compatible in-memory database with 10x throughput performance for large-scale data operations and caching workloads.
+---
+
+Aiven for Dragonfly is an advanced, high-scale, Redis-compatible in-memory database service designed to overcome Redis OSS limitations under high-load conditions. Handle workloads exceeding 1 TB with more than 10x the throughput performance of Redis OSS.
+
+## Overview
+
+Dragonfly is specifically built to address the scalability and resource utilization challenges of Redis OSS. While Redis is renowned for speed and adaptability, it encounters limitations with large-scale data management and high throughput requirements. Dragonfly solves these challenges through vertical scaling, optimized hardware resource usage, and support for larger memory footprints.
+
+### Why Choose Aiven for Dragonfly
+
+<CardGroup cols={2}>
+  <Card title="10x Performance" icon="rocket">
+    Achieve over 10x the throughput of Redis OSS with reduced latency
+  </Card>
+  <Card title="Redis Compatible" icon="check">
+    Drop-in replacement for Redis with no code changes required
+  </Card>
+  <Card title="Vertical Scaling" icon="arrow-up">
+    Scale up to handle 1 TB+ workloads on single instances
+  </Card>
+  <Card title="Efficient Architecture" icon="microchip">
+    Shared-nothing threading model for optimal resource utilization
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Redis Compatibility at Scale">
+    Seamless drop-in replacement for Redis:
+
+    - Compatible with Redis API and protocols
+    - Works with existing Redis clients
+    - No application code changes needed
+    - Support for Redis data structures
+    - Redis commands and pipelines
+  </Accordion>
+
+  <Accordion title="Advanced Threading Model">
+    Unique architecture for performance:
+
+    - Shared-nothing architecture
+    - Multi-threaded processing
+    - Efficient CPU utilization
+    - Lock-free data structures
+    - Automatic thread management
+  </Accordion>
+
+  <Accordion title="Large-Scale Operations">
+    Built for enterprise workloads:
+
+    - Handle 1 TB+ datasets
+    - Millions of operations per second
+    - Efficient memory management
+    - Optimized for modern hardware
+    - Reduced latency at scale
+  </Accordion>
+
+  <Accordion title="High Availability">
+    Production-ready reliability:
+
+    - Active-passive replication
+    - Automatic failover
+    - Persistence (RDB and AOF)
+    - Snapshot capabilities
+    - Backup and restore
+  </Accordion>
+
+  <Accordion title="Efficient Backups">
+    Improved memory management during backups:
+
+    - Reduced memory overhead
+    - Faster snapshot creation
+    - Minimal performance impact
+    - Background save operations
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Dragonfly Service">
+    Deploy a Dragonfly service:
+
+    ```bash
+    avn service create my-dragonfly \
+      --service-type dragonfly \
+      --cloud aws-us-east-1 \
+      --plan business-8
+    ```
+  </Step>
+
+  <Step title="Connect with Redis Client">
+    Use any Redis client - Dragonfly is fully compatible:
+
+    ```bash
+    redis-cli -h dragonfly-service.aivencloud.com \
+      -p 12345 \
+      -a your-password \
+      --tls
+    ```
+  </Step>
+
+  <Step title="Start Using Redis Commands">
+    ```bash
+    # Set and get operations
+    SET user:1000 "John Doe"
+    GET user:1000
+
+    # Hash operations
+    HSET product:100 name "Widget" price 19.99 stock 50
+    HGETALL product:100
+
+    # List operations
+    LPUSH queue:jobs job1 job2 job3
+    RPOP queue:jobs
+    ```
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import redis
+
+    # Connect to Dragonfly (same as Redis)
+    client = redis.Redis(
+        host='dragonfly-service.aivencloud.com',
+        port=12345,
+        password='your-password',
+        ssl=True,
+        ssl_cert_reqs='required'
+    )
+
+    # All Redis operations work identically
+    client.set('counter', 0)
+    client.incr('counter')
+    
+    # Hash operations
+    client.hset('user:1', mapping={
+        'name': 'John',
+        'email': 'john@example.com'
+    })
+    
+    # Pipeline for performance
+    pipe = client.pipeline()
+    for i in range(10000):
+        pipe.set(f'key:{i}', f'value:{i}')
+    pipe.execute()
+    
+    # Pub/Sub
+    pubsub = client.pubsub()
+    pubsub.subscribe('notifications')
+    for message in pubsub.listen():
+        print(message)
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const redis = require('redis');
+
+    const client = redis.createClient({
+      socket: {
+        host: 'dragonfly-service.aivencloud.com',
+        port: 12345,
+        tls: true
+      },
+      password: 'your-password'
+    });
+
+    await client.connect();
+
+    // String operations
+    await client.set('key', 'value');
+    const value = await client.get('key');
+
+    // Hash operations
+    await client.hSet('product:1', {
+      name: 'Widget',
+      price: '19.99'
+    });
+
+    // Sorted set for leaderboard
+    await client.zAdd('leaderboard', [
+      { score: 100, value: 'player1' },
+      { score: 200, value: 'player2' }
+    ]);
+
+    const topPlayers = await client.zRange('leaderboard', 0, 9, {
+      REV: true,
+      WITHSCORES: true
+    });
+
+    await client.disconnect();
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import redis.clients.jedis.Jedis;
+    import redis.clients.jedis.JedisPool;
+    import redis.clients.jedis.JedisPoolConfig;
+
+    public class DragonflyExample {
+        public static void main(String[] args) {
+            JedisPoolConfig poolConfig = new JedisPoolConfig();
+            poolConfig.setMaxTotal(20);
+
+            JedisPool pool = new JedisPool(
+                poolConfig,
+                "dragonfly-service.aivencloud.com",
+                12345,
+                2000,
+                "your-password",
+                true // SSL
+            );
+
+            try (Jedis jedis = pool.getResource()) {
+                // String operations
+                jedis.set("message", "Hello Dragonfly");
+                String message = jedis.get("message");
+
+                // Hash operations
+                jedis.hset("user:1", "name", "John Doe");
+                jedis.hset("user:1", "age", "30");
+                
+                // List operations
+                jedis.lpush("tasks", "task1", "task2");
+                String task = jedis.rpop("tasks");
+
+                // Sorted set
+                jedis.zadd("scores", 100, "player1");
+                Set<String> topScores = jedis.zrevrange("scores", 0, 9);
+            }
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        "context"
+        "fmt"
+        "github.com/go-redis/redis/v8"
+    )
+
+    func main() {
+        ctx := context.Background()
+
+        client := redis.NewClient(&redis.Options{
+            Addr:     "dragonfly-service.aivencloud.com:12345",
+            Password: "your-password",
+            TLSConfig: &tls.Config{},
+        })
+
+        // String operations
+        err := client.Set(ctx, "key", "value", 0).Err()
+        if err != nil {
+            panic(err)
+        }
+
+        val, err := client.Get(ctx, "key").Result()
+        fmt.Println("key:", val)
+
+        // Hash operations
+        client.HSet(ctx, "user:1", "name", "John", "email", "john@example.com")
+        
+        // Pipeline
+        pipe := client.Pipeline()
+        pipe.Incr(ctx, "counter")
+        pipe.Expire(ctx, "counter", time.Hour)
+        _, err = pipe.Exec(ctx)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Advantages
+
+<Tabs>
+  <Tab title="Throughput">
+    **10x Higher Throughput:**
+    - Multi-threaded architecture
+    - Parallel request processing
+    - Efficient memory access patterns
+    - Optimized for modern CPUs
+    - Millions of ops/sec capability
+
+    **Benchmarks:**
+    - SET operations: 10M+ ops/sec
+    - GET operations: 15M+ ops/sec
+    - Mixed workloads: 8M+ ops/sec
+  </Tab>
+
+  <Tab title="Latency">
+    **Reduced Latency:**
+    - Sub-millisecond response times
+    - Consistent performance under load
+    - No lock contention
+    - Cache-friendly design
+
+    **Typical Latency:**
+    - p50: < 0.5ms
+    - p95: < 1ms  
+    - p99: < 2ms
+  </Tab>
+
+  <Tab title="Memory Efficiency">
+    **Better Memory Utilization:**
+    - Efficient data structures
+    - Reduced fragmentation
+    - Optimized snapshots
+    - Lower memory overhead
+    - Support for 1 TB+ datasets
+  </Tab>
+
+  <Tab title="CPU Efficiency">
+    **Optimized CPU Usage:**
+    - Vertical scaling efficiency
+    - Multi-core utilization
+    - Lock-free algorithms
+    - NUMA-aware design
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="High-Scale Caching">
+    Perfect for large-scale caching needs:
+
+    - Multi-terabyte cache layers
+    - High-traffic web applications
+    - Content delivery networks
+    - API response caching
+    - Database query caching
+  </Tab>
+
+  <Tab title="Session Management">
+    Handle millions of concurrent sessions:
+
+    - User session storage
+    - Shopping cart data
+    - Authentication tokens
+    - Temporary user state
+  </Tab>
+
+  <Tab title="Real-Time Analytics">
+    Process high-velocity data:
+
+    - Real-time counters
+    - Trending topics
+    - Live leaderboards
+    - Stream processing
+    - Metrics aggregation
+  </Tab>
+
+  <Tab title="Message Queues">
+    High-throughput message processing:
+
+    - Job queues
+    - Task distribution
+    - Event streaming
+    - Pub/Sub messaging
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Migration from Redis">
+    - Test with production-like workloads
+    - Monitor performance metrics
+    - Use same client libraries
+    - No application changes needed
+    - Verify command compatibility
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Use pipelining for bulk operations
+    - Implement connection pooling
+    - Set appropriate key expiration
+    - Monitor memory usage
+    - Use efficient data structures
+  </Accordion>
+
+  <Accordion title="High Availability">
+    - Use business or premium plans
+    - Enable automatic backups
+    - Test failover procedures
+    - Monitor replication lag
+    - Plan for disaster recovery
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring
+
+### Key Metrics
+
+<CardGroup cols={2}>
+  <Card title="Performance" icon="gauge">
+    - Operations per second
+    - Command latency
+    - Hit rate
+    - Network throughput
+  </Card>
+
+  <Card title="Resources" icon="server">
+    - Memory usage
+    - CPU utilization
+    - Connection count
+    - Network I/O
+  </Card>
+</CardGroup>
+
+### Integration with Grafana
+
+```bash
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-dragonfly \
+  --dest-service my-grafana
+```
+
+## When to Choose Dragonfly
+
+<AccordionGroup>
+  <Accordion title="Large-Scale Workloads">
+    Choose Dragonfly when:
+    - Dataset exceeds 100 GB
+    - Need > 1M ops/sec throughput
+    - Vertical scaling preferred
+    - Memory footprint > 256 GB
+  </Accordion>
+
+  <Accordion title="Performance Critical">
+    Ideal for:
+    - High-traffic applications
+    - Low-latency requirements
+    - Real-time processing
+    - Heavy concurrent access
+  </Accordion>
+
+  <Accordion title="Cost Optimization">
+    Benefits:
+    - Fewer instances needed
+    - Better resource utilization
+    - Reduced operational overhead
+    - Vertical vs horizontal scaling
+  </Accordion>
+</AccordionGroup>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Valkey" icon="bolt" href="/services/valkey">
+    Alternative Redis-compatible in-memory store
+  </Card>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Use Dragonfly for Kafka offset management
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Cache PostgreSQL queries in Dragonfly
+  </Card>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Visualize Dragonfly metrics
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Dragonfly Documentation](https://www.dragonflydb.io/docs)
+- [Dragonfly GitHub](https://github.com/dragonflydb/dragonfly)
+- [Aiven for Dragonfly](https://aiven.io/dragonfly)
+
+<Note>
+  **SLA Note**: Check with Aiven for specific SLA details for Dragonfly services. Performance and availability may vary based on plan and configuration.
+</Note>
+
+<Warning>
+  Dragonfly is optimized for vertical scaling. Choose instance types with sufficient memory for your workload rather than scaling horizontally.
+</Warning>

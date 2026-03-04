@@ -1,0 +1,745 @@
+---
+title: Monitoring and Logs
+description: Learn how to monitor services, view logs, set up alerts, and integrate with observability platforms on Aiven.
+---
+
+Aiven provides built-in monitoring and logging for all services, along with integrations to export metrics and logs to external platforms. Monitor service health, performance, and troubleshoot issues with comprehensive observability tools.
+
+## Monitoring overview
+
+Aiven offers multiple levels of monitoring:
+
+<CardGroup cols={3}>
+  <Card title="Built-in Metrics" icon="chart-line">
+    - Real-time service metrics
+    - CPU, memory, disk, network
+    - Service-specific metrics
+    - Available in Console
+  </Card>
+  
+  <Card title="Service Logs" icon="file-alt">
+    - Service operation logs
+    - Error and debug messages
+    - Connection logs
+    - 4-day retention
+  </Card>
+  
+  <Card title="Audit Logs" icon="clipboard-list">
+    - Organization events
+    - Project events
+    - User actions
+    - Configuration changes
+  </Card>
+</CardGroup>
+
+## Service metrics
+
+View real-time metrics for all your services:
+
+### Built-in metrics
+
+Available for every service without additional configuration:
+
+<Tabs>
+  <Tab title="Host Metrics">
+    **Infrastructure-level metrics**
+    
+    <ParamField path="CPU Usage" type="Percentage">
+      Percentage of CPU resources consumed by the service
+    </ParamField>
+    
+    <ParamField path="Memory Usage" type="Percentage">
+      Percentage of memory utilized by the service
+    </ParamField>
+    
+    <ParamField path="Disk Space Usage" type="Percentage">
+      Percentage of disk space used
+    </ParamField>
+    
+    <ParamField path="Load Average" type="Number">
+      5-minute average CPU load indicating system computational load
+    </ParamField>
+    
+    <ParamField path="Disk IOPS (reads)" type="Operations/sec">
+      Input/output operations per second for disk reads
+    </ParamField>
+    
+    <ParamField path="Disk IOPS (writes)" type="Operations/sec">
+      Input/output operations per second for disk writes
+    </ParamField>
+    
+    <ParamField path="Network Received" type="Bytes/sec">
+      Network traffic received by the service
+    </ParamField>
+    
+    <ParamField path="Network Transmitted" type="Bytes/sec">
+      Network traffic transmitted by the service
+    </ParamField>
+  </Tab>
+  
+  <Tab title="Service-Specific">
+    **Database and service metrics**
+    
+    Additional metrics depending on service type:
+    
+    **PostgreSQL:**
+    - Active connections
+    - Transaction rate
+    - Cache hit ratio
+    - Replication lag
+    
+    **Kafka:**
+    - Messages per second
+    - Broker lag
+    - Topic partition metrics
+    - Consumer group lag
+    
+    **Redis:**
+    - Connected clients
+    - Commands per second
+    - Key evictions
+    - Memory fragmentation
+  </Tab>
+</Tabs>
+
+### Viewing metrics
+
+<Steps>
+  <Step title="Open service in Console">
+    Navigate to **Projects** → Select project → Select service
+  </Step>
+  
+  <Step title="View metrics tab">
+    Click **Metrics** tab to see real-time charts
+  </Step>
+  
+  <Step title="Adjust time range">
+    Select time range: 1 hour, 6 hours, 1 day, 7 days, 30 days
+  </Step>
+  
+  <Step title="Export via CLI">
+    ```bash
+    # Get metrics via CLI
+    avn service metrics \
+      --project my-project \
+      --service postgres-1 \
+      --period hour
+    ```
+  </Step>
+</Steps>
+
+### Advanced metrics integration
+
+For detailed service-specific metrics, set up metrics integration:
+
+<Steps>
+  <Step title="Create PostgreSQL service">
+    Store metrics data in PostgreSQL database
+    
+    ```bash
+    avn service create metrics-db \
+      --project my-project \
+      --service-type pg \
+      --plan business-4 \
+      --cloud aws-us-east-1
+    ```
+  </Step>
+  
+  <Step title="Create Grafana service">
+    Visualize metrics with Grafana dashboards
+    
+    ```bash
+    avn service create metrics-grafana \
+      --project my-project \
+      --service-type grafana \
+      --plan startup-4 \
+      --cloud aws-us-east-1
+    ```
+  </Step>
+  
+  <Step title="Integrate services">
+    ```bash
+    # Connect Grafana to PostgreSQL
+    avn service integration-create \
+      --project my-project \
+      --source-service metrics-db \
+      --dest-service metrics-grafana \
+      --integration-type dashboard
+    
+    # Send service metrics to PostgreSQL  
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-1 \
+      --dest-service metrics-db \
+      --integration-type metrics
+    ```
+  </Step>
+  
+  <Step title="View dashboards">
+    Access Grafana using the service URI from Console connection information
+  </Step>
+</Steps>
+
+<Note>
+Metrics integration requires separate PostgreSQL and Grafana services (additional cost). Predefined dashboards are automatically created and maintained.
+</Note>
+
+## Service logs
+
+View logs for troubleshooting and monitoring:
+
+### Accessing service logs
+
+<Tabs>
+  <Tab title="Aiven Console">
+    <Steps>
+      <Step title="Navigate to service">
+        Select project → Select service
+      </Step>
+      <Step title="View logs tab">
+        Click **Logs** tab
+      </Step>
+      <Step title="Filter logs">
+        - Filter by severity (error, warning, info)
+        - Search for specific text
+        - Adjust time range
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Aiven CLI">
+    ```bash
+    # View recent logs
+    avn service logs \
+      --project my-project \
+      --service postgres-1
+    
+    # Follow logs in real-time
+    avn service logs \
+      --project my-project \
+      --service postgres-1 \
+      --follow
+    
+    # Filter by severity
+    avn service logs \
+      --project my-project \
+      --service postgres-1 \
+      --severity error
+    ```
+  </Tab>
+</Tabs>
+
+### Log retention
+
+<Warning>
+Service logs are retained for **4 days** by default. For longer retention, set up log integration with OpenSearch.
+</Warning>
+
+```yaml
+Default Log Retention:
+  Service Logs: 4 days
+  Organization Audit Logs: 90 days
+  Project Event Logs: 90 days
+  
+Extended Retention:
+  Method: Log integration with OpenSearch
+  Duration: Limited by OpenSearch disk space
+  Cost: OpenSearch service cost
+```
+
+### Log integration
+
+Send logs to OpenSearch for long-term storage and analysis:
+
+<Steps>
+  <Step title="Create OpenSearch service">
+    ```bash
+    avn service create logs-opensearch \
+      --project my-project \
+      --service-type opensearch \
+      --plan business-8 \
+      --cloud aws-us-east-1
+    ```
+  </Step>
+  
+  <Step title="Enable log integration">
+    ```bash
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-1 \
+      --dest-service logs-opensearch \
+      --integration-type logs
+    ```
+  </Step>
+  
+  <Step title="Access OpenSearch Dashboards">
+    Use service URI to open OpenSearch Dashboards and analyze logs
+  </Step>
+  
+  <Step title="Configure retention">
+    Set index lifecycle management in OpenSearch for desired retention period
+  </Step>
+</Steps>
+
+<Note>
+All services in the project can send logs to the same OpenSearch service. Create one OpenSearch service for centralized logging.
+</Note>
+
+## Audit logs
+
+Track administrative actions and changes:
+
+### Organization audit logs
+
+View organization-level events:
+
+<Steps>
+  <Step title="Navigate to organization logs">
+    **Admin** → **Organization** → **Events Log**
+  </Step>
+  <Step title="Review events">
+    Events include:
+    - User invitations and removals
+    - Permission changes  
+    - Domain verification
+    - IdP configuration
+    - Billing group changes
+    - Organizational unit creation/deletion
+  </Step>
+</Steps>
+
+### Project event logs
+
+View project-level events:
+
+<Steps>
+  <Step title="Navigate to project logs">
+    Select project → **Event log**
+  </Step>
+  <Step title="Review events">
+    Events include:
+    - Service creation/deletion/updates
+    - Configuration changes
+    - User access changes
+    - VPC and peering changes
+    - Integration changes
+    - Backup operations
+  </Step>
+</Steps>
+
+### API access to audit logs
+
+```bash
+# Get organization audit logs
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/organization/{org_id}/audit
+
+# Get project event logs  
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/events
+
+# Filter by date range
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://api.aiven.io/v1/project/{project}/events?from=2024-01-01&to=2024-01-31"
+```
+
+<Note>
+Organization audit logs require `organization:audit_logs:read` permission. Project logs require `project:audit_logs:read` permission.
+</Note>
+
+## Prometheus integration
+
+Expose metrics in Prometheus format for scraping:
+
+### Enabling Prometheus
+
+<Steps>
+  <Step title="Create Prometheus endpoint">
+    Navigate to project → **Integration endpoints** → **Add new endpoint** → **Prometheus**
+  </Step>
+  
+  <Step title="Enable for service">
+    Service → **Overview** → **Service integrations** → **Manage integrations** → **Prometheus** → **Enable**
+  </Step>
+  
+  <Step title="Get metrics endpoint">
+    Service → **Overview** → **Connection information** → **Prometheus** tab
+    
+    Copy the Service URI and credentials
+  </Step>
+  
+  <Step title="Configure Prometheus scraper">
+    ```yaml
+    # prometheus.yml
+    scrape_configs:
+      - job_name: 'aiven-postgres'
+        scheme: https
+        basic_auth:
+          username: <PROMETHEUS_USER>
+          password: <PROMETHEUS_PASSWORD>
+        tls_config:
+          ca_file: ca.pem
+        static_configs:
+          - targets: ['<SERVICE_HOST>:<PROMETHEUS_PORT>']
+    ```
+  </Step>
+</Steps>
+
+### Prometheus in VPC
+
+If using VPC peering, enable public Prometheus access:
+
+```bash
+# Enable public access to Prometheus endpoint
+avn service update \
+  --project my-project \
+  --service postgres-1 \
+  -c public_access.prometheus=true
+```
+
+### Prometheus metrics
+
+Available metrics include:
+
+- **System metrics:** CPU, memory, disk, network
+- **Service metrics:** Connections, queries, cache hits
+- **Custom metrics:** Application-specific (service dependent)
+
+```bash
+# Example metrics query
+curl -u <USER>:<PASS> https://<SERVICE_HOST>:<PORT>/metrics
+
+# Output:
+# cpu_usage_percent{host="node1"} 45.2
+# memory_usage_percent{host="node1"} 67.8
+# pg_stat_database_numbackends{datname="defaultdb"} 15
+```
+
+## External integrations
+
+Integrate Aiven metrics and logs with external platforms:
+
+### Datadog integration
+
+Send metrics to Datadog:
+
+<Steps>
+  <Step title="Create Datadog endpoint">
+    Project → **Integration endpoints** → **Datadog**
+    
+    Enter your Datadog API key and site (US/EU)
+  </Step>
+  
+  <Step title="Enable for service">
+    Service → **Integrations** → **Datadog** → **Enable**
+  </Step>
+  
+  <Step title="View in Datadog">
+    Metrics appear in Datadog with `aiven.` prefix
+  </Step>
+</Steps>
+
+```bash
+# Create Datadog integration via CLI
+avn service integration-endpoint-create \
+  --project my-project \
+  --endpoint-name datadog-us \
+  --endpoint-type datadog \
+  --user-config '{"datadog_api_key": "<API_KEY>", "site": "datadoghq.com"}'
+
+avn service integration-create \
+  --project my-project \
+  --source-service postgres-1 \
+  --endpoint-id <ENDPOINT_ID> \
+  --integration-type datadog
+```
+
+### Jolokia (JMX) integration
+
+Access JMX metrics for Kafka and other Java services:
+
+<Steps>
+  <Step title="Enable Jolokia">
+    Available for Kafka, Kafka Connect, and other Java-based services
+  </Step>
+  
+  <Step title="Get Jolokia URL">
+    Service → **Connection information** → **Jolokia** tab
+  </Step>
+  
+  <Step title="Query JMX metrics">
+    ```bash
+    curl -u <USER>:<PASS> \
+      https://<SERVICE_HOST>:<JOLOKIA_PORT>/jolokia/read/kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec
+    ```
+  </Step>
+</Steps>
+
+### Rsyslog integration
+
+Send logs to external syslog servers:
+
+```bash
+# Create rsyslog endpoint
+avn service integration-endpoint-create \
+  --project my-project \
+  --endpoint-name syslog-server \
+  --endpoint-type rsyslog \
+  --user-config '{"server": "syslog.company.com", "port": 514, "format": "rfc5424"}'
+
+# Enable for service  
+avn service integration-create \
+  --project my-project \
+  --source-service postgres-1 \
+  --endpoint-id <ENDPOINT_ID> \
+  --integration-type rsyslog
+```
+
+## Alerts and notifications
+
+Set up alerts for service issues:
+
+### Email notifications
+
+Manage project and service notifications:
+
+<Steps>
+  <Step title="Configure notification emails">
+    Project settings → **Notifications**
+  </Step>
+  
+  <Step title="Add email addresses">
+    Add technical contacts for alerts
+  </Step>
+  
+  <Step title="Select notification types">
+    - Service maintenance announcements
+    - Service issues and outages
+    - Backup failures
+    - High resource usage warnings
+  </Step>
+</Steps>
+
+### Service contacts
+
+Add contacts per service:
+
+```bash
+# Add service contact
+avn service contact-create \
+  --project my-project \
+  --service postgres-1 \
+  --email oncall@company.com
+
+# List contacts  
+avn service contact-list \
+  --project my-project \
+  --service postgres-1
+```
+
+### Grafana alerts
+
+Set up alerts in Grafana for metrics:
+
+<Steps>
+  <Step title="Create alert in Grafana">
+    Open Grafana dashboard → Edit panel → **Alert** tab
+  </Step>
+  
+  <Step title="Configure alert rule">
+    - Set threshold (e.g., CPU > 80%)
+    - Set evaluation interval
+    - Configure for clause (duration)
+  </Step>
+  
+  <Step title="Add notification channel">
+    - Email, Slack, PagerDuty, etc.
+    - Configure webhook URL or credentials
+  </Step>
+  
+  <Step title="Test alert">
+    Trigger test notification to verify setup
+  </Step>
+</Steps>
+
+### Common alert scenarios
+
+<AccordionGroup>
+  <Accordion title="High CPU usage">
+    **Alert:** CPU usage > 80% for 10 minutes
+    
+    **Actions:**
+    1. Review slow queries or processes
+    2. Check for unusual traffic patterns
+    3. Consider upgrading service plan
+  </Accordion>
+  
+  <Accordion title="Low disk space">
+    **Alert:** Disk usage > 85%
+    
+    **Actions:**
+    1. Review disk usage by table/index
+    2. Clean up unnecessary data
+    3. Enable disk autoscaler
+    4. Upgrade to larger plan
+  </Accordion>
+  
+  <Accordion title="High connection count">
+    **Alert:** Connections > 80% of max
+    
+    **Actions:**
+    1. Check for connection leaks in applications
+    2. Implement connection pooling
+    3. Review connection limits
+    4. Upgrade service plan
+  </Accordion>
+  
+  <Accordion title="Replication lag">
+    **Alert:** Replication lag > 60 seconds
+    
+    **Actions:**
+    1. Check network connectivity
+    2. Review write load on primary
+    3. Check replica performance
+    4. Contact support if persists
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring best practices
+
+<Steps>
+  <Step title="Set up metrics integration early">
+    Deploy PostgreSQL + Grafana for detailed metrics from day one
+  </Step>
+  
+  <Step title="Configure log integration">
+    Send logs to OpenSearch for longer retention and analysis
+  </Step>
+  
+  <Step title="Create baseline metrics">
+    Monitor normal performance patterns to identify anomalies
+  </Step>
+  
+  <Step title="Set appropriate alert thresholds">
+    Avoid alert fatigue - set thresholds that indicate real issues
+  </Step>
+  
+  <Step title="Monitor key service metrics">
+    Focus on:
+    - Resource utilization (CPU, memory, disk)
+    - Connection count and errors
+    - Query performance and slow queries
+    - Replication lag (if applicable)
+  </Step>
+  
+  <Step title="Review logs regularly">
+    Check error logs weekly to catch issues before they become critical
+  </Step>
+  
+  <Step title="Use audit logs for security">
+    Monitor audit logs for suspicious activity or unauthorized changes
+  </Step>
+  
+  <Step title="Test alerting">
+    Regularly verify alert notifications are being delivered
+  </Step>
+  
+  <Step title="Document runbooks">
+    Create procedures for responding to common alerts
+  </Step>
+  
+  <Step title="Automate where possible">
+    Use disk autoscaler and other automation to reduce manual intervention
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Metrics not appearing in Grafana">
+    **Cause:** Integration not properly configured or needs time to populate
+    
+    **Solution:**
+    1. Verify metrics integration is active
+    2. Wait 1-2 minutes for initial data
+    3. Check PostgreSQL has space and is running
+    4. Verify network connectivity if using VPC
+  </Accordion>
+  
+  <Accordion title="Cannot access Prometheus endpoint">
+    **Cause:** Service in VPC without public Prometheus access
+    
+    **Solution:**
+    1. Enable public access: `public_access.prometheus=true`
+    2. Or access from peered VPC
+    3. Check IP allowlist includes your scraper's IP
+  </Accordion>
+  
+  <Accordion title="Logs not appearing in OpenSearch">
+    **Cause:** Integration not enabled or OpenSearch full
+    
+    **Solution:**
+    1. Verify log integration is active
+    2. Check OpenSearch disk space
+    3. Review index lifecycle management settings
+    4. Check for ingestion errors in OpenSearch
+  </Accordion>
+  
+  <Accordion title="Not receiving alert emails">
+    **Cause:** Email addresses not configured or notifications disabled
+    
+    **Solution:**
+    1. Verify email addresses in project notifications
+    2. Check spam folder
+    3. Verify notification types are enabled
+    4. Test with manual service restart
+  </Accordion>
+</AccordionGroup>
+
+## API reference
+
+<CodeGroup>
+```bash Get service metrics
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/service/{service}/metrics
+```
+
+```bash Get service logs
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/service/{service}/logs
+```
+
+```bash Get project events
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/events
+```
+
+```bash Create integration
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_service": "postgres-1",
+    "dest_service": "logs-opensearch",
+    "integration_type": "logs"
+  }' \
+  https://api.aiven.io/v1/project/{project}/integration
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Service Integrations" icon="link" href="/platform/service-integrations">
+    Set up metrics and log integrations
+  </Card>
+  <Card title="Security" icon="shield" href="/platform/security">
+    Review security audit logs
+  </Card>
+  <Card title="VPC & Networking" icon="network-wired" href="/platform/vpc-and-networking">
+    Configure network for Prometheus access
+  </Card>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Grant audit log access permissions
+  </Card>
+</CardGroup>

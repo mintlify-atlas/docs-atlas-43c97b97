@@ -1,0 +1,529 @@
+---
+title: Aiven for Apache Flink
+description: Fully managed stateful stream processing with Apache Flink SQL for real-time analytics and event-driven applications.
+---
+
+Aiven for Apache Flink is a fully managed service for distributed, stateful stream processing. Process and analyze streaming data in real-time using standard SQL, with built-in integrations to Kafka and PostgreSQL.
+
+## Overview
+
+Apache Flink is the leading open-source stream processing framework for building real-time data pipelines and streaming applications. Aiven for Apache Flink provides a managed platform with a built-in SQL editor, making it easy to develop, test, and deploy streaming applications without managing infrastructure.
+
+### Why Choose Aiven for Apache Flink
+
+<CardGroup cols={2}>
+  <Card title="SQL-Based Development" icon="code">
+    Write streaming applications using standard SQL with a built-in editor in Aiven Console
+  </Card>
+  <Card title="Stateful Processing" icon="microchip">
+    Maintain state across stream events for complex event processing and aggregations
+  </Card>
+  <Card title="Built-in Kafka Integration" icon="plug">
+    Native integration with Aiven for Apache Kafka for seamless data flow
+  </Card>
+  <Card title="Exactly-Once Semantics" icon="shield-check">
+    Guarantee data accuracy with exactly-once processing semantics
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Flink SQL Editor">
+    Built-in SQL editor in Aiven Console:
+
+    - Write and test Flink SQL queries
+    - Explore table schemas
+    - Interactive query execution
+    - Deploy queries as applications
+    - Version control for SQL statements
+
+    **Example Streaming Query:**
+    ```sql
+    SELECT 
+        TUMBLE_START(event_time, INTERVAL '1' MINUTE) AS window_start,
+        user_id,
+        COUNT(*) AS event_count,
+        SUM(amount) AS total_amount
+    FROM kafka_events
+    GROUP BY 
+        TUMBLE(event_time, INTERVAL '1' MINUTE),
+        user_id
+    HAVING COUNT(*) > 10;
+    ```
+  </Accordion>
+
+  <Accordion title="Flink Applications">
+    Abstraction layer for managing streaming jobs:
+
+    - Source and sink table definitions
+    - Data processing logic
+    - Deployment parameters
+    - Metadata and configuration
+    - Guided wizard in Aiven Console
+
+    **Application Components:**
+    - Source tables (Kafka, PostgreSQL)
+    - Transformation SQL statements
+    - Sink tables (Kafka, PostgreSQL, OpenSearch)
+    - Deployment and scaling settings
+  </Accordion>
+
+  <Accordion title="Interactive Queries">
+    Preview data without creating sink tables:
+
+    - Test transformations quickly
+    - Debug streaming logic
+    - Explore data schemas
+    - Validate joins and aggregations
+
+    ```sql
+    -- Preview Kafka topic data
+    SELECT * FROM kafka_orders LIMIT 10;
+
+    -- Test transformation
+    SELECT 
+        order_id,
+        customer_id,
+        order_total,
+        order_total * 1.1 AS total_with_tax
+    FROM kafka_orders
+    WHERE order_status = 'completed'
+    LIMIT 100;
+    ```
+  </Accordion>
+
+  <Accordion title="Built-in Connectors">
+    **Apache Kafka Connector:**
+    - Auto-complete for Kafka topics
+    - Multiple formats: JSON, Avro, Confluent Avro, Debezium CDC
+    - Upsert Kafka for changelog streams
+    - Schema Registry integration
+
+    **PostgreSQL Connector:**
+    - Read from PostgreSQL tables
+    - Write results back to PostgreSQL
+    - Auto-complete for databases and tables
+    - Support for JDBC connections
+
+    **OpenSearch Connector:**
+    - Sink streaming results to OpenSearch
+    - Full-text search integration
+    - Dynamic index creation
+  </Accordion>
+
+  <Accordion title="Exactly-Once Semantics">
+    Guarantee data accuracy:
+
+    - Checkpointing for fault tolerance
+    - Automatic state recovery
+    - Transactional sinks
+    - No data loss or duplication
+  </Accordion>
+</AccordionGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create Flink Service">
+    Deploy an Apache Flink service:
+
+    ```bash
+    avn service create my-flink \
+      --service-type flink \
+      --cloud aws-us-east-1 \
+      --plan business-4
+    ```
+
+    <Note>
+      Service creation may be limited based on your subscription. Check with Aiven support for access.
+    </Note>
+  </Step>
+
+  <Step title="Create Integration with Kafka">
+    Connect Flink to your Kafka service:
+
+    ```bash
+    avn service integration-create \
+      --integration-type flink \
+      --source-service my-kafka \
+      --dest-service my-flink
+    ```
+
+    This enables Flink to read from and write to Kafka topics.
+  </Step>
+
+  <Step title="Create a Flink Application">
+    Use the Aiven Console wizard to:
+
+    1. Create source tables from Kafka topics
+    2. Write transformation SQL
+    3. Create sink tables for results
+    4. Deploy the application
+  </Step>
+
+  <Step title="Test with Interactive Queries">
+    Run queries directly in the SQL editor to test before deploying.
+  </Step>
+</Steps>
+
+## Stream Processing Patterns
+
+<Tabs>
+  <Tab title="Filtering and Transformation">
+    ```sql
+    -- Filter high-value orders and enrich with customer data
+    CREATE TABLE enriched_orders AS
+    SELECT 
+        o.order_id,
+        o.order_time,
+        o.order_total,
+        c.customer_name,
+        c.customer_tier,
+        c.customer_email
+    FROM kafka_orders o
+    JOIN postgres_customers FOR SYSTEM_TIME AS OF o.order_time AS c
+        ON o.customer_id = c.customer_id
+    WHERE o.order_total > 100;
+    ```
+  </Tab>
+
+  <Tab title="Windowed Aggregations">
+    ```sql
+    -- Calculate metrics per 5-minute tumbling window
+    CREATE TABLE window_metrics AS
+    SELECT
+        TUMBLE_START(event_time, INTERVAL '5' MINUTE) AS window_start,
+        TUMBLE_END(event_time, INTERVAL '5' MINUTE) AS window_end,
+        sensor_id,
+        COUNT(*) AS reading_count,
+        AVG(temperature) AS avg_temperature,
+        MAX(temperature) AS max_temperature,
+        MIN(temperature) AS min_temperature
+    FROM kafka_sensor_data
+    GROUP BY 
+        TUMBLE(event_time, INTERVAL '5' MINUTE),
+        sensor_id;
+    ```
+  </Tab>
+
+  <Tab title="Stream Joins">
+    ```sql
+    -- Join clickstream with purchases (within 1 hour)
+    CREATE TABLE attributed_purchases AS
+    SELECT
+        p.purchase_id,
+        p.user_id,
+        p.amount,
+        c.page_url,
+        c.referrer,
+        c.campaign_id
+    FROM kafka_purchases p
+    JOIN kafka_clicks c
+        ON p.user_id = c.user_id
+        AND p.purchase_time BETWEEN c.click_time 
+            AND c.click_time + INTERVAL '1' HOUR;
+    ```
+  </Tab>
+
+  <Tab title="Change Data Capture">
+    ```sql
+    -- Process database changes from Debezium CDC
+    CREATE TABLE customer_changes (
+        customer_id BIGINT,
+        name STRING,
+        email STRING,
+        op_type STRING -- 'c' for create, 'u' for update, 'd' for delete
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'dbserver1.customers',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'format' = 'debezium-json'
+    );
+
+    -- Materialize current state
+    CREATE TABLE current_customers AS
+    SELECT 
+        customer_id,
+        name,
+        email
+    FROM customer_changes
+    WHERE op_type <> 'd';
+    ```
+  </Tab>
+</Tabs>
+
+## Window Types
+
+<AccordionGroup>
+  <Accordion title="Tumbling Windows">
+    Fixed-size, non-overlapping windows:
+
+    ```sql
+    -- Events grouped into 10-minute buckets
+    SELECT
+        TUMBLE_START(event_time, INTERVAL '10' MINUTE) AS window_start,
+        COUNT(*) AS event_count
+    FROM events
+    GROUP BY TUMBLE(event_time, INTERVAL '10' MINUTE);
+    ```
+  </Accordion>
+
+  <Accordion title="Sliding Windows">
+    Overlapping windows:
+
+    ```sql
+    -- 10-minute windows sliding every 5 minutes
+    SELECT
+        HOP_START(event_time, INTERVAL '5' MINUTE, INTERVAL '10' MINUTE) AS window_start,
+        COUNT(*) AS event_count
+    FROM events
+    GROUP BY HOP(event_time, INTERVAL '5' MINUTE, INTERVAL '10' MINUTE);
+    ```
+  </Accordion>
+
+  <Accordion title="Session Windows">
+    Dynamic windows based on inactivity:
+
+    ```sql
+    -- Group events with max 30-minute gap
+    SELECT
+        SESSION_START(event_time, INTERVAL '30' MINUTE) AS session_start,
+        SESSION_END(event_time, INTERVAL '30' MINUTE) AS session_end,
+        user_id,
+        COUNT(*) AS event_count
+    FROM events
+    GROUP BY 
+        SESSION(event_time, INTERVAL '30' MINUTE),
+        user_id;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Table Formats and Connectors
+
+### Kafka Table Formats
+
+<Tabs>
+  <Tab title="JSON">
+    ```sql
+    CREATE TABLE kafka_events (
+        event_id STRING,
+        event_time TIMESTAMP(3),
+        user_id BIGINT,
+        event_type STRING,
+        WATERMARK FOR event_time AS event_time - INTERVAL '5' SECOND
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'events',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'format' = 'json',
+        'json.timestamp-format.standard' = 'ISO-8601'
+    );
+    ```
+  </Tab>
+
+  <Tab title="Avro">
+    ```sql
+    CREATE TABLE kafka_events (
+        event_id STRING,
+        event_time TIMESTAMP(3),
+        user_id BIGINT
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'events',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'format' = 'avro',
+        'avro.schema' = '{...}'
+    );
+    ```
+  </Tab>
+
+  <Tab title="Confluent Avro">
+    ```sql
+    CREATE TABLE kafka_events (
+        event_id STRING,
+        event_time TIMESTAMP(3),
+        user_id BIGINT
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'events',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'format' = 'avro-confluent',
+        'avro-confluent.url' = 'https://schema-registry:8081'
+    );
+    ```
+  </Tab>
+
+  <Tab title="Upsert Kafka">
+    ```sql
+    CREATE TABLE user_stats (
+        user_id BIGINT PRIMARY KEY NOT ENFORCED,
+        total_purchases BIGINT,
+        total_amount DECIMAL(10,2),
+        last_purchase_time TIMESTAMP(3)
+    ) WITH (
+        'connector' = 'upsert-kafka',
+        'topic' = 'user-stats',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'key.format' = 'json',
+        'value.format' = 'json'
+    );
+    ```
+  </Tab>
+</Tabs>
+
+## Cluster Management
+
+<AccordionGroup>
+  <Accordion title="Scaling">
+    - Scale up: Increase CPU and memory per TaskManager
+    - Scale out: Add more nodes to the cluster
+    - Configure task slots per TaskManager
+    - Adjust parallelism for jobs
+
+    <Warning>
+      Adjusting task slots requires a cluster restart.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Checkpoints">
+    Automatic fault tolerance:
+
+    - Periodic checkpoints to object storage
+    - State recovery on failure
+    - Exactly-once guarantees
+    - Configurable checkpoint interval
+
+    Checkpoints are automatically configured for your cluster.
+  </Accordion>
+
+  <Accordion title="Session Mode">
+    Multiple jobs on same cluster:
+
+    - Share cluster resources
+    - Deploy multiple applications
+    - Maximize resource utilization
+    - Isolated job execution
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring and Operations
+
+### Key Metrics
+
+<CardGroup cols={2}>
+  <Card title="Job Metrics" icon="chart-line">
+    - Records processed per second
+    - Job uptime and restarts
+    - Checkpoint duration
+    - Backpressure indicators
+  </Card>
+
+  <Card title="Resource Usage" icon="server">
+    - TaskManager CPU/memory
+    - JobManager status
+    - Network I/O
+    - State size
+  </Card>
+</CardGroup>
+
+### Integration with Observability
+
+```bash
+# Send logs to OpenSearch
+avn service integration-create \
+  --integration-type logs \
+  --source-service my-flink \
+  --dest-service my-opensearch
+
+# Send metrics to Grafana
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-flink \
+  --dest-service my-grafana
+```
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Real-Time Analytics">
+    - Live dashboards
+    - Streaming aggregations
+    - Metric computation
+    - KPI monitoring
+  </Tab>
+
+  <Tab title="ETL Pipelines">
+    - Stream data transformation
+    - Data enrichment
+    - Format conversion
+    - Data quality validation
+  </Tab>
+
+  <Tab title="Event-Driven Apps">
+    - Complex event processing
+    - Pattern detection
+    - Fraud detection
+    - Anomaly detection
+  </Tab>
+
+  <Tab title="Data Integration">
+    - Database replication
+    - Change data capture
+    - Multi-source aggregation
+    - Real-time data warehousing
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="State Management">
+    - Use proper key partitioning
+    - Implement state TTL for growing state
+    - Monitor state size
+    - Use RocksDB for large state
+  </Accordion>
+
+  <Accordion title="Watermarks">
+    - Define watermarks for event-time processing
+    - Account for late events
+    - Balance latency vs completeness
+    - Use allowed lateness for critical data
+  </Accordion>
+
+  <Accordion title="Performance">
+    - Tune checkpoint intervals
+    - Adjust parallelism appropriately
+    - Use proper join strategies
+    - Monitor backpressure
+  </Accordion>
+</AccordionGroup>
+
+## Related Services
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Stream processing on Kafka data
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Enrich streams with PostgreSQL data
+  </Card>
+  <Card title="OpenSearch" icon="magnifying-glass" href="/services/opensearch">
+    Sink processed results to OpenSearch
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Load streaming results to ClickHouse
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [Apache Flink Documentation](https://flink.apache.org/)
+- [Flink SQL Reference](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/table/sql/overview/)
+- [Aiven for Flink](https://aiven.io/flink)
+
+<Note>
+  **SQL-Based Development**: No Java or Scala knowledge required. Build streaming applications entirely with SQL using the Aiven Console.
+</Note>

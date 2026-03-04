@@ -1,0 +1,772 @@
+---
+title: Service Integrations
+description: Learn how to integrate Aiven services for metrics, logs, data streaming, and cross-service functionality.
+---
+
+Service integrations connect different Aiven services together to enable advanced functionality like metrics visualization, log aggregation, data streaming, and cross-service data flows.
+
+## Integration overview
+
+Aiven supports two types of integrations:
+
+<CardGroup cols={2}>
+  <Card title="Service-to-Service" icon="link">
+    **Direct integration between Aiven services**
+    
+    - Metrics: PostgreSQL + Grafana
+    - Logs: Any service + OpenSearch
+    - Data streams: Kafka + other services
+    - Cross-service queries
+  </Card>
+  
+  <Card title="External Endpoints" icon="plug">
+    **Integration with external platforms**
+    
+    - Datadog for metrics
+    - Prometheus exporters
+    - Rsyslog servers
+    - Jolokia for JMX metrics
+  </Card>
+</CardGroup>
+
+## Common integration patterns
+
+### Metrics visualization
+
+Send service metrics to PostgreSQL and visualize in Grafana:
+
+<Steps>
+  <Step title="Create PostgreSQL service">
+    ```bash
+    avn service create metrics-db \
+      --project my-project \
+      --service-type pg \
+      --plan business-4 \
+      --cloud aws-us-east-1
+    ```
+    
+    This service stores time-series metrics data
+  </Step>
+  
+  <Step title="Create Grafana service">
+    ```bash
+    avn service create metrics-grafana \
+      --project my-project \
+      --service-type grafana \
+      --plan startup-4 \
+      --cloud aws-us-east-1
+    ```
+    
+    Grafana provides dashboards for visualization
+  </Step>
+  
+  <Step title="Integrate Grafana with PostgreSQL">
+    ```bash
+    avn service integration-create \
+      --project my-project \
+      --source-service metrics-db \
+      --dest-service metrics-grafana \
+      --integration-type dashboard
+    ```
+    
+    This creates the data source connection in Grafana
+  </Step>
+  
+  <Step title="Send service metrics to PostgreSQL">
+    ```bash
+    # Send PostgreSQL metrics
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --dest-service metrics-db \
+      --integration-type metrics
+    
+    # Send Kafka metrics
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-prod \
+      --dest-service metrics-db \
+      --integration-type metrics
+    ```
+  </Step>
+  
+  <Step title="Access Grafana dashboards">
+    1. Get Grafana Service URI from Console
+    2. Log in with credentials from connection information
+    3. View predefined Aiven dashboards
+    4. Create custom dashboards
+  </Step>
+</Steps>
+
+<Note>
+Predefined dashboards are automatically created and maintained by Aiven. Dashboard names start with "Aiven" and are automatically updated. Don't modify these - create copies or custom dashboards instead.
+</Note>
+
+### Log aggregation
+
+Centralize logs from all services in OpenSearch:
+
+<Steps>
+  <Step title="Create OpenSearch service">
+    ```bash
+    avn service create logs-opensearch \
+      --project my-project \
+      --service-type opensearch \
+      --plan business-8 \
+      --cloud aws-us-east-1
+    ```
+    
+    Choose plan with enough disk for log retention needs
+  </Step>
+  
+  <Step title="Enable log integrations">
+    ```bash
+    # Send PostgreSQL logs
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --dest-service logs-opensearch \
+      --integration-type logs
+    
+    # Send Kafka logs  
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-prod \
+      --dest-service logs-opensearch \
+      --integration-type logs
+    
+    # Send Redis logs
+    avn service integration-create \
+      --project my-project \
+      --source-service redis-cache \
+      --dest-service logs-opensearch \
+      --integration-type logs
+    ```
+  </Step>
+  
+  <Step title="Configure log retention">
+    In OpenSearch, set up Index Lifecycle Management (ILM):
+    
+    ```json
+    {
+      "policy": {
+        "phases": {
+          "hot": {
+            "actions": {}
+          },
+          "delete": {
+            "min_age": "30d",
+            "actions": {
+              "delete": {}
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Access OpenSearch Dashboards">
+    Use Service URI to access Dashboards and create visualizations
+  </Step>
+</Steps>
+
+<Warning>
+Log retention is limited by OpenSearch disk space. Monitor disk usage and adjust retention policies or service plan accordingly.
+</Warning>
+
+## Integration types
+
+### Metrics integrations
+
+<Tabs>
+  <Tab title="Aiven Metrics">
+    **PostgreSQL + Grafana**
+    
+    - Service-specific detailed metrics
+    - Predefined dashboards automatically created
+    - Query performance insights
+    - Resource utilization tracking
+    
+    ```bash
+    # Setup
+    avn service integration-create \
+      --project my-project \
+      --source-service <any-service> \
+      --dest-service metrics-db \
+      --integration-type metrics
+    ```
+    
+    **Available metrics:**
+    - System: CPU, memory, disk, network
+    - Database: Connections, queries, cache hits
+    - Kafka: Messages/sec, lag, partition metrics
+    - Redis: Commands/sec, key evictions
+  </Tab>
+  
+  <Tab title="Datadog">
+    **External metrics platform**
+    
+    - Send metrics to Datadog
+    - Use Datadog's alerting and dashboards
+    - Integrate with other Datadog services
+    
+    ```bash
+    # Create endpoint
+    avn service integration-endpoint-create \
+      --project my-project \
+      --endpoint-name datadog-us \
+      --endpoint-type datadog \
+      --user-config '{"datadog_api_key": "<API_KEY>", "site": "datadoghq.com"}'
+    
+    # Enable integration
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --endpoint-id <ENDPOINT_ID> \
+      --integration-type datadog
+    ```
+    
+    Metrics appear in Datadog with `aiven.` prefix
+  </Tab>
+  
+  <Tab title="Prometheus">
+    **Prometheus-compatible metrics**
+    
+    - Expose metrics in Prometheus format
+    - Scrape with your Prometheus server
+    - Use with any Prometheus-compatible tool
+    
+    ```bash
+    # Create Prometheus endpoint
+    avn service integration-endpoint-create \
+      --project my-project \
+      --endpoint-name prometheus \
+      --endpoint-type prometheus
+    
+    # Enable on service  
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --endpoint-id <ENDPOINT_ID> \
+      --integration-type prometheus
+    ```
+    
+    Configure Prometheus to scrape the endpoint
+  </Tab>
+</Tabs>
+
+### Log integrations
+
+<Tabs>
+  <Tab title="OpenSearch">
+    **Aiven OpenSearch**
+    
+    - Centralized log storage and search
+    - OpenSearch Dashboards for visualization
+    - Long-term retention (disk-limited)
+    - Full-text search capabilities
+    
+    ```bash
+    avn service integration-create \
+      --project my-project \
+      --source-service <any-service> \
+      --dest-service logs-opensearch \
+      --integration-type logs
+    ```
+  </Tab>
+  
+  <Tab title="Rsyslog">
+    **External syslog server**
+    
+    - Send to existing syslog infrastructure
+    - RFC5424 or RFC3164 format
+    - TCP or UDP transport
+    
+    ```bash
+    # Create rsyslog endpoint
+    avn service integration-endpoint-create \
+      --project my-project \
+      --endpoint-name syslog-server \
+      --endpoint-type rsyslog \
+      --user-config '{
+        "server": "syslog.company.com",
+        "port": 514,
+        "format": "rfc5424",
+        "tls": true
+      }'
+    
+    # Enable integration  
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --endpoint-id <ENDPOINT_ID> \
+      --integration-type rsyslog
+    ```
+  </Tab>
+</Tabs>
+
+### Data streaming integrations
+
+<Tabs>
+  <Tab title="Kafka Connect">
+    **Data pipelines**
+    
+    - Stream data between Kafka and other services
+    - Source connectors (databases → Kafka)
+    - Sink connectors (Kafka → databases/storage)
+    
+    ```bash
+    # Create Kafka Connect service
+    avn service create kafka-connect \
+      --project my-project \
+      --service-type kafka_connect \
+      --plan business-4 \
+      --cloud aws-us-east-1
+    
+    # Integrate with Kafka
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-prod \
+      --dest-service kafka-connect \
+      --integration-type kafka_connect
+    ```
+  </Tab>
+  
+  <Tab title="Kafka MirrorMaker">
+    **Cross-cluster replication**
+    
+    - Replicate topics between Kafka clusters
+    - Disaster recovery
+    - Multi-region deployments
+    
+    ```bash
+    # Integrate source and target Kafka clusters
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-source \
+      --dest-service kafka-target \
+      --integration-type kafka_mirrormaker
+    ```
+  </Tab>
+  
+  <Tab title="Flink">
+    **Stream processing**
+    
+    - Process Kafka streams with Flink
+    - Real-time analytics
+    - Complex event processing
+    
+    ```bash
+    # Create Flink service
+    avn service create flink \
+      --project my-project \
+      --service-type flink \
+      --plan business-4 \
+      --cloud aws-us-east-1
+    
+    # Integrate with Kafka  
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-prod \
+      --dest-service flink \
+      --integration-type flink
+    ```
+  </Tab>
+</Tabs>
+
+### Database integrations
+
+<Tabs>
+  <Tab title="Read Replicas">
+    **PostgreSQL/MySQL replicas**
+    
+    - Create read-only replicas
+    - Scale read workloads
+    - Cross-region replicas
+    
+    ```bash
+    # Create read replica
+    avn service create postgres-replica \
+      --project my-project \
+      --service-type pg \
+      --plan business-4 \
+      --cloud aws-eu-west-1
+    
+    # Set up replication  
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-primary \
+      --dest-service postgres-replica \
+      --integration-type read_replica
+    ```
+  </Tab>
+  
+  <Tab title="ClickHouse + Kafka">
+    **Real-time analytics**
+    
+    - Stream data from Kafka to ClickHouse
+    - Real-time data warehouse
+    - High-performance analytics
+    
+    ```bash
+    avn service integration-create \
+      --project my-project \
+      --source-service kafka-prod \
+      --dest-service clickhouse-analytics \
+      --integration-type clickhouse_kafka
+    ```
+  </Tab>
+  
+  <Tab title="PostgreSQL + OpenSearch">
+    **Full-text search**
+    
+    - Sync PostgreSQL data to OpenSearch
+    - Add search capabilities to applications
+    - Keep data in sync automatically
+    
+    ```bash
+    avn service integration-create \
+      --project my-project \
+      --source-service postgres-prod \
+      --dest-service opensearch \
+      --integration-type opensearch_logs
+    ```
+  </Tab>
+</Tabs>
+
+## Managing integrations
+
+### List integrations
+
+<CodeGroup>
+```bash All integrations in project
+avn service integration-list \
+  --project my-project
+```
+
+```bash Integrations for specific service
+avn service integration-list \
+  --project my-project \
+  --source-service postgres-prod
+```
+
+```bash Integration endpoints
+avn service integration-endpoint-list \
+  --project my-project
+```
+</CodeGroup>
+
+### Update integrations
+
+```bash
+# Update integration configuration
+avn service integration-update \
+  --project my-project \
+  --integration-id <INTEGRATION_ID> \
+  --user-config '{
+    "index_prefix": "aiven-logs-",
+    "timeout": 120
+  }'
+```
+
+### Delete integrations
+
+```bash
+# Remove integration
+avn service integration-delete \
+  --project my-project \
+  --integration-id <INTEGRATION_ID>
+
+# Delete integration endpoint
+avn service integration-endpoint-delete \
+  --project my-project \
+  --endpoint-id <ENDPOINT_ID>
+```
+
+## Integration use cases
+
+### Complete observability stack
+
+Set up comprehensive monitoring and logging:
+
+```bash
+# 1. Create infrastructure services
+avn service create metrics-db --service-type pg --plan business-4
+avn service create metrics-grafana --service-type grafana --plan startup-4
+avn service create logs-opensearch --service-type opensearch --plan business-8
+
+# 2. Connect Grafana to PostgreSQL
+avn service integration-create \
+  --source-service metrics-db \
+  --dest-service metrics-grafana \
+  --integration-type dashboard
+
+# 3. Send all service metrics to PostgreSQL
+for service in postgres-prod kafka-prod redis-cache; do
+  avn service integration-create \
+    --source-service $service \
+    --dest-service metrics-db \
+    --integration-type metrics
+done
+
+# 4. Send all service logs to OpenSearch  
+for service in postgres-prod kafka-prod redis-cache; do
+  avn service integration-create \
+    --source-service $service \
+    --dest-service logs-opensearch \
+    --integration-type logs
+done
+```
+
+### Kafka streaming architecture
+
+Build a complete streaming data platform:
+
+```bash
+# 1. Create Kafka cluster
+avn service create kafka-prod --service-type kafka --plan business-4
+
+# 2. Create Kafka Connect for data ingestion
+avn service create kafka-connect --service-type kafka_connect --plan business-4
+avn service integration-create \
+  --source-service kafka-prod \
+  --dest-service kafka-connect \
+  --integration-type kafka_connect
+
+# 3. Create Flink for stream processing
+avn service create flink --service-type flink --plan business-4
+avn service integration-create \
+  --source-service kafka-prod \
+  --dest-service flink \
+  --integration-type flink
+
+# 4. Create ClickHouse for analytics
+avn service create clickhouse --service-type clickhouse --plan business-8
+avn service integration-create \
+  --source-service kafka-prod \
+  --dest-service clickhouse \
+  --integration-type clickhouse_kafka
+
+# 5. Monitor the platform
+avn service integration-create \
+  --source-service kafka-prod \
+  --dest-service metrics-db \
+  --integration-type metrics
+```
+
+### Multi-region database setup
+
+Set up cross-region read replicas:
+
+```bash
+# 1. Primary database in US
+avn service create postgres-primary \
+  --service-type pg \
+  --plan business-8 \
+  --cloud aws-us-east-1
+
+# 2. Read replica in EU  
+avn service create postgres-eu \
+  --service-type pg \
+  --plan business-8 \
+  --cloud aws-eu-west-1
+
+avn service integration-create \
+  --source-service postgres-primary \
+  --dest-service postgres-eu \
+  --integration-type read_replica
+
+# 3. Read replica in Asia
+avn service create postgres-asia \
+  --service-type pg \
+  --plan business-8 \
+  --cloud aws-ap-southeast-1
+
+avn service integration-create \
+  --source-service postgres-primary \
+  --dest-service postgres-asia \
+  --integration-type read_replica
+```
+
+## Integration billing
+
+<Note>
+Integrations themselves don't cost extra, but integrated services incur their normal hourly charges.
+</Note>
+
+### Cost considerations
+
+- **Metrics integration:** Requires PostgreSQL + Grafana services
+- **Log integration:** Requires OpenSearch service (size depends on log volume)
+- **Data streaming:** Requires Kafka Connect, Flink, or other streaming services
+- **Read replicas:** Full cost of replica service
+
+### Optimizing costs
+
+<Steps>
+  <Step title="Share observability services">
+    Use one PostgreSQL + Grafana for all services in a project
+  </Step>
+  
+  <Step title="Right-size OpenSearch">
+    Monitor disk usage and adjust plan based on actual log volume
+  </Step>
+  
+  <Step title="Use log retention policies">
+    Configure ILM to delete old logs automatically
+  </Step>
+  
+  <Step title="Selective metrics">
+    Only integrate metrics for critical production services
+  </Step>
+</Steps>
+
+## Best practices
+
+<Steps>
+  <Step title="Set up observability early">
+    Deploy metrics and logging integrations from day one
+  </Step>
+  
+  <Step title="Use one metrics stack per project">
+    Share PostgreSQL + Grafana across all services in the project
+  </Step>
+  
+  <Step title="Centralize logs">
+    Send all service logs to the same OpenSearch instance
+  </Step>
+  
+  <Step title="Configure retention policies">
+    Set appropriate log retention in OpenSearch to manage disk usage
+  </Step>
+  
+  <Step title="Monitor integration health">
+    Check that integrations are active and data is flowing
+  </Step>
+  
+  <Step title="Document integrations">
+    Maintain documentation of which services integrate with what
+  </Step>
+  
+  <Step title="Test before production">
+    Verify integrations in development before enabling in production
+  </Step>
+  
+  <Step title="Use cross-region carefully">
+    Be aware of data transfer costs for cross-region integrations
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Integration shows as failed">
+    **Cause:** Destination service not ready or network issue
+    
+    **Solution:**
+    1. Check both services are running
+    2. Verify services are in same project
+    3. For cross-region, check connectivity
+    4. Try recreating the integration
+  </Accordion>
+  
+  <Accordion title="Metrics not appearing in Grafana">
+    **Cause:** Integration needs time to populate or not configured correctly
+    
+    **Solution:**
+    1. Wait 1-2 minutes for initial data
+    2. Verify metrics integration is active
+    3. Check PostgreSQL has free disk space
+    4. Refresh Grafana dashboard
+  </Accordion>
+  
+  <Accordion title="Logs not appearing in OpenSearch">
+    **Cause:** Integration issue or OpenSearch disk full
+    
+    **Solution:**
+    1. Verify log integration is active
+    2. Check OpenSearch disk space
+    3. Review ILM policies
+    4. Check for ingestion errors in OpenSearch
+  </Accordion>
+  
+  <Accordion title="Grafana dashboards disappeared">
+    **Cause:** Dashboard name conflict or modification
+    
+    **Solution:**
+    1. Don't modify dashboards starting with "Aiven"
+    2. Create copies or custom dashboards instead
+    3. Predefined dashboards are auto-maintained
+    4. Check for typos in dashboard names
+  </Accordion>
+  
+  <Accordion title="High latency in read replica">
+    **Cause:** Network latency or replication lag
+    
+    **Solution:**
+    1. Check replication lag metrics
+    2. Verify network connectivity
+    3. Reduce write load on primary
+    4. Ensure replica has adequate resources
+  </Accordion>
+</AccordionGroup>
+
+## API reference
+
+<CodeGroup>
+```bash List integrations
+curl -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/integration
+```
+
+```bash Create integration
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_service": "postgres-prod",
+    "dest_service": "metrics-db",
+    "integration_type": "metrics"
+  }' \
+  https://api.aiven.io/v1/project/{project}/integration
+```
+
+```bash Delete integration
+curl -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \
+  https://api.aiven.io/v1/project/{project}/integration/{integration_id}
+```
+
+```bash Create endpoint
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "endpoint_name": "datadog-us",
+    "endpoint_type": "datadog",
+    "user_config": {
+      "datadog_api_key": "<API_KEY>",
+      "site": "datadoghq.com"
+    }
+  }' \
+  https://api.aiven.io/v1/project/{project}/integration_endpoint
+```
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Monitoring & Logs" icon="chart-line" href="/platform/monitoring-and-logs">
+    Learn about monitoring and viewing logs
+  </Card>
+  <Card title="VPC & Networking" icon="network-wired" href="/platform/vpc-and-networking">
+    Configure networking for integrations
+  </Card>
+  <Card title="Security" icon="shield" href="/platform/security">
+    Secure your service integrations
+  </Card>
+  <Card title="Billing" icon="credit-card" href="/platform/billing-and-payment">
+    Understand integration costs
+  </Card>
+</CardGroup>

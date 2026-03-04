@@ -1,0 +1,206 @@
+---
+title: Aiven Platform Overview
+description: Learn about the Aiven Platform, including organizations, projects, services, security features, and deployment options.
+---
+
+The Aiven Platform is a comprehensive cloud data platform that enables you to deploy, manage, and scale open-source data services across multiple cloud providers. Built on a foundation of security, reliability, and performance, Aiven provides enterprise-grade managed services for databases, streaming, and observability.
+
+## Platform architecture
+
+The Aiven Platform is organized into a hierarchical structure that helps you manage your infrastructure efficiently:
+
+<CardGroup cols={3}>
+  <Card title="Organizations" icon="building" href="/platform/organizations-and-projects">
+    Top-level entity containing all your resources and settings
+  </Card>
+  <Card title="Projects" icon="folder" href="/platform/organizations-and-projects">
+    Collections of services grouped by use case or environment
+  </Card>
+  <Card title="Services" icon="server">
+    Individual managed database and data infrastructure services
+  </Card>
+</CardGroup>
+
+### Three-tier hierarchy
+
+```
+Organization
+├── Organizational Unit (Development)
+│   ├── Project (dev-backend)
+│   │   ├── PostgreSQL Service
+│   │   └── Kafka Service
+│   └── Project (dev-frontend)
+│       └── Redis Service
+└── Organizational Unit (Production)
+    ├── Project (prod-backend)
+    │   ├── PostgreSQL Service
+    │   └── Kafka Service
+    └── Project (prod-analytics)
+        └── OpenSearch Service
+```
+
+## Key platform capabilities
+
+### Multi-cloud deployment
+
+Deploy services across multiple cloud providers:
+
+- **Amazon Web Services (AWS)** - 20+ regions worldwide
+- **Google Cloud Platform (GCP)** - 15+ regions worldwide  
+- **Microsoft Azure** - 15+ regions worldwide
+- **DigitalOcean** - Select regions
+- **UpCloud** - Select regions
+
+All services can be deployed in any supported region, giving you flexibility to:
+
+- Reduce latency by deploying close to your users
+- Meet data residency and compliance requirements
+- Avoid vendor lock-in with true multi-cloud architecture
+- Optimize costs with cloud-specific pricing
+
+### Security and compliance
+
+Aiven provides enterprise-grade security features:
+
+- **Encryption at rest and in transit** - All data encrypted using industry-standard algorithms
+- **VPC peering** - Private network connectivity between your infrastructure and Aiven services
+- **IP allowlisting** - Restrict access to services by IP address
+- **SSO and SAML** - Enterprise authentication with identity providers
+- **Compliance certifications** - SOC 2, ISO 27001, HIPAA, PCI DSS, GDPR
+
+<Note>
+Learn more about [security features](/platform/security) and [VPC networking](/platform/vpc-and-networking).
+</Note>
+
+### Deployment models
+
+Aiven offers flexible deployment options to meet your requirements:
+
+<CardGroup cols={2}>
+  <Card title="Standard Deployment" icon="cloud">
+    Services run on Aiven-managed infrastructure with full platform integration
+  </Card>
+  <Card title="Bring Your Own Cloud (BYOC)" icon="building" href="/platform/organizations-and-projects">
+    Services run in your own cloud account while managed by Aiven
+  </Card>
+</CardGroup>
+
+**BYOC benefits:**
+- Use existing cloud commitments and discounts
+- Enhanced network control and visibility
+- Meet strict compliance requirements
+- Audit network metadata in your cloud account
+
+<Warning>
+BYOC is available for AWS and GCP with Advanced or Premium support tiers. Contact your account team to learn more.
+</Warning>
+
+## Platform services
+
+Aiven provides fully managed services for:
+
+### Databases
+- PostgreSQL, MySQL, Cassandra, Redis, OpenSearch
+
+### Streaming
+- Apache Kafka, Apache Flink, Kafka Connect
+
+### Observability  
+- Grafana, Metrics (M3DB/Thanos)
+
+### Analytics
+- ClickHouse, Dragonfly
+
+All services include:
+- Automated backups and point-in-time recovery
+- High availability with automatic failover
+- Monitoring and alerting
+- Maintenance updates with zero downtime
+- 24/7 support
+
+## Management tools
+
+Manage your Aiven infrastructure using:
+
+<Steps>
+  <Step title="Aiven Console">
+    Web-based UI for visual management and monitoring at [console.aiven.io](https://console.aiven.io)
+  </Step>
+  <Step title="Aiven CLI">
+    Command-line interface for automation and scripting
+    
+    ```bash
+    # Install the Aiven CLI
+    pip install aiven-client
+    
+    # List services in a project
+    avn service list --project my-project
+    ```
+  </Step>
+  <Step title="Aiven API">
+    RESTful API for programmatic access and integrations
+    
+    ```bash
+    # Get service details
+    curl -H "Authorization: Bearer $TOKEN" \
+      https://api.aiven.io/v1/project/my-project/service/my-service
+    ```
+  </Step>
+  <Step title="Infrastructure as Code">
+    Terraform Provider and Kubernetes Operator for declarative infrastructure management
+    
+    ```hcl
+    resource "aiven_pg" "demo" {
+      project      = "my-project"
+      cloud_name   = "aws-us-east-1"
+      plan         = "business-4"
+      service_name = "demo-postgres"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Pricing model
+
+Aiven uses transparent, predictable pricing:
+
+- **Hourly billing** - Pay only for what you use
+- **No hidden fees** - All costs included (backups, data transfer within region)
+- **Service plans** - Choose from Hobbyist, Startup, Business, and Premium tiers
+- **Custom plans** - Available for large deployments
+
+Billing is managed through [billing groups](/platform/billing-and-payment) at the organization level.
+
+## Getting started
+
+<Steps>
+  <Step title="Sign up">
+    Create your Aiven account at [console.aiven.io](https://console.aiven.io/signup)
+  </Step>
+  <Step title="Create a project">
+    Organize your services by creating a project in your organization
+  </Step>
+  <Step title="Deploy a service">
+    Choose a service type, cloud provider, region, and plan
+  </Step>
+  <Step title="Connect">
+    Use connection credentials from the Console to connect your applications
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Organizations & Projects" icon="sitemap" href="/platform/organizations-and-projects">
+    Learn how to structure your Aiven resources
+  </Card>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Manage access control for your team
+  </Card>
+  <Card title="Authentication" icon="lock" href="/platform/authentication">
+    Configure SSO and authentication policies
+  </Card>
+  <Card title="VPC Networking" icon="network-wired" href="/platform/vpc-and-networking">
+    Set up private network connectivity
+  </Card>
+</CardGroup>

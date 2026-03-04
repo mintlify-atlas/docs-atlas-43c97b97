@@ -1,0 +1,173 @@
+---
+title: Aiven Managed Services Overview
+description: Deploy fully managed and scalable open source data technologies as individual services and advanced data pipelines in minutes.
+---
+
+Aiven provides fully managed, enterprise-grade open source data infrastructure services that you can deploy in minutes on any cloud. All services are fully managed with automated backups, monitoring, and high availability.
+
+## Service Categories
+
+### Streaming
+
+Build real-time data pipelines and streaming applications with Apache Kafka and Apache Flink.
+
+<CardGroup cols={2}>
+  <Card title="Apache Kafka" icon="stream" href="/services/kafka">
+    Event streaming platform for building real-time data pipelines
+  </Card>
+  <Card title="Apache Flink" icon="wave-pulse" href="/services/flink">
+    Stateful stream processing for real-time analytics
+  </Card>
+</CardGroup>
+
+### Databases
+
+Choose from a variety of purpose-built databases optimized for different workloads.
+
+<CardGroup cols={3}>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Powerful relational database with AI capabilities
+  </Card>
+  <Card title="MySQL" icon="database" href="/services/mysql">
+    Popular relational database with extensive integrations
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Real-time analytical data warehouse
+  </Card>
+  <Card title="OpenSearch" icon="magnifying-glass" href="/services/opensearch">
+    Search and analytics engine with dashboards
+  </Card>
+  <Card title="Valkey" icon="bolt" href="/services/valkey">
+    High-performance in-memory data store
+  </Card>
+  <Card title="Dragonfly" icon="rocket" href="/services/dragonfly">
+    Scalable Redis-compatible in-memory database
+  </Card>
+</CardGroup>
+
+### Observability
+
+Monitor and visualize your infrastructure with powerful observability tools.
+
+<CardGroup cols={2}>
+  <Card title="Grafana" icon="chart-line" href="/services/grafana">
+    Analytics and monitoring dashboards
+  </Card>
+  <Card title="Metrics" icon="gauge" href="/services/metrics">
+    Thanos-powered metrics for Prometheus
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Multi-Cloud Deployment">
+    Deploy on AWS, Google Cloud, Microsoft Azure, or bring your own cloud (BYOC). Choose from over 100 regions worldwide with the flexibility to migrate between clouds.
+  </Accordion>
+
+  <Accordion title="Enterprise Security">
+    - End-to-end encryption for data in transit and at rest
+    - VPC peering, PrivateLink, and TransitGateway support
+    - ISO 27001, SOC 2, GDPR, HIPAA, and PCI/DSS compliant
+    - Role-based access control (RBAC)
+    - Single tenancy with dedicated instances
+  </Accordion>
+
+  <Accordion title="High Availability">
+    - 99.99% SLA on business and premium plans
+    - Automatic failover and disaster recovery
+    - Continuous backups with configurable retention
+    - Cross-region replication support
+  </Accordion>
+
+  <Accordion title="DevOps-Friendly Tools">
+    - Aiven Console for web-based management
+    - Aiven CLI for command-line operations
+    - Terraform provider for infrastructure as code
+    - REST APIs for programmatic control
+    - Integration with CI/CD pipelines
+  </Accordion>
+
+  <Accordion title="Automatic Maintenance">
+    - Zero-downtime updates and patches
+    - Configurable maintenance windows
+    - Automatic security updates
+    - Version upgrades with rollback support
+  </Accordion>
+</AccordionGroup>
+
+## Service Tiers
+
+Aiven offers multiple service tiers to match your needs:
+
+| Tier | Description | Use Case |
+|------|-------------|----------|
+| **Free** | Limited resources, no payment required | Evaluation and experimentation |
+| **Hobbyist** | Single node, limited availability | Development and testing |
+| **Startup** | Single node, production-ready | Small applications |
+| **Business** | High availability with standby nodes | Production workloads |
+| **Premium** | Enhanced high availability | Mission-critical applications |
+
+## Deployment Models
+
+<Tabs>
+  <Tab title="Aiven Cloud">
+    Deploy on Aiven-managed infrastructure across AWS, Google Cloud, and Azure. Aiven handles all infrastructure management while you focus on your applications.
+
+    **Benefits:**
+    - Quick deployment in minutes
+    - No infrastructure management required
+    - Access to 100+ global regions
+    - Pay-as-you-go pricing
+  </Tab>
+
+  <Tab title="Bring Your Own Cloud (BYOC)">
+    Deploy Aiven services in your own cloud account while Aiven manages the service operations.
+
+    **Benefits:**
+    - Data stays in your cloud account
+    - Meet strict compliance requirements
+    - Use existing cloud commitments
+    - Full visibility into infrastructure costs
+  </Tab>
+</Tabs>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create an Aiven Account">
+    Sign up at [console.aiven.io](https://console.aiven.io) to get started. No credit card required for free tier services.
+  </Step>
+
+  <Step title="Create a Project">
+    Organize your services into projects. Projects help you manage billing, access control, and resource organization.
+  </Step>
+
+  <Step title="Deploy a Service">
+    Choose a service type, select your cloud provider and region, pick a service plan, and deploy in minutes.
+  </Step>
+
+  <Step title="Connect Your Application">
+    Use the connection information from the service overview to connect your applications. All services provide secure TLS connections by default.
+  </Step>
+</Steps>
+
+## Next Steps
+
+Explore individual service documentation to learn more:
+
+- [Apache Kafka](/services/kafka) - Build streaming data pipelines
+- [PostgreSQL](/services/postgresql) - Deploy AI-powered relational databases
+- [ClickHouse](/services/clickhouse) - Analyze data in real-time
+- [Grafana](/services/grafana) - Create monitoring dashboards
+
+<Note>
+  All Aiven services integrate seamlessly with each other. For example, you can stream data from Kafka to ClickHouse, visualize metrics in Grafana, and search logs in OpenSearch.
+</Note>
+
+## Support and Resources
+
+- [Platform Documentation](/platform/overview) - Learn about platform features
+- [API Reference](/api-reference) - Programmatic access to Aiven
+- [Aiven CLI](/tools/cli) - Command-line management
+- [Terraform Provider](/tools/terraform) - Infrastructure as code

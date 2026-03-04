@@ -1,0 +1,191 @@
+---
+title: AWS CloudWatch integration
+description: Send metrics and logs from Aiven services to Amazon CloudWatch for monitoring, alerting, and analysis.
+---
+
+[Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) is AWS's monitoring and observability service that helps you observe your applications and infrastructure resources. Aiven provides integrations that enable you to include Aiven service data into Amazon CloudWatch metrics and logs.
+
+## Integration types
+
+Aiven supports two types of CloudWatch integrations:
+
+- **CloudWatch Metrics** - Send service performance metrics to CloudWatch
+- **CloudWatch Logs** - Stream service logs to CloudWatch log groups
+
+## CloudWatch metrics integration
+
+### Prerequisites
+
+- An AWS account and the region it is in
+- An Aiven account with a service running
+- AWS Access Key and Secret Key
+
+<Note>
+To generate your AWS credentials:
+
+1. Open your AWS console under the **IAM dashboard**
+2. Click **Users** and open the **Security credentials** tab
+3. Choose **Create access key**
+4. Click **Download** and keep the file secure
+</Note>
+
+### Configure the metrics endpoint
+
+<Steps>
+  <Step title="Access integration endpoints">
+    In your Aiven project, click **Integration endpoints**.
+  </Step>
+  
+  <Step title="Create CloudWatch endpoint">
+    Click **AWS CloudWatch Metrics** and select **Add a new endpoint** or **Create new**.
+  </Step>
+  
+  <Step title="Configure endpoint settings">
+    Enter the following details:
+    
+    - **Endpoint name** - Reference name for this integration
+    - **CloudWatch Namespace** - Organize your metrics in different spaces
+    - **Access Key** - Your AWS access key
+    - **Secret Key** - Your AWS secret key
+    - **Region** - Your AWS account region
+  </Step>
+  
+  <Step title="Save endpoint">
+    Click **Create** to save the endpoint configuration.
+  </Step>
+</Steps>
+
+### Enable metrics on a service
+
+<Steps>
+  <Step title="Open service integrations">
+    From your service page, click **Integrations**.
+  </Step>
+  
+  <Step title="Select CloudWatch Metrics">
+    Choose the **Amazon CloudWatch Metrics** option.
+  </Step>
+  
+  <Step title="Choose endpoint">
+    Select the endpoint you created by its **Endpoint name** and click **Continue**.
+  </Step>
+  
+  <Step title="Customize metrics">
+    Select which metric groups or individual metric fields to send to CloudWatch.
+  </Step>
+  
+  <Step title="Verify in AWS">
+    Go to your AWS CloudWatch console and check the **Metrics** section. Data may take a few minutes to arrive.
+  </Step>
+</Steps>
+
+## CloudWatch logs integration
+
+### Prerequisites
+
+- An AWS account with the region configured
+- An Aiven account with a running service
+- AWS Access Key and Secret Key with appropriate permissions
+
+<Warning>
+Your AWS credentials must have the following permissions:
+
+- `logs:DescribeLogStreams` - List log streams for the log group
+- `logs:CreateLogGroup` - Create log groups
+- `logs:CreateLogStream` - Create log streams
+- `logs:PutLogEvents` - Upload log events to streams
+
+See the [CloudWatch API documentation](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_Operations) for more information.
+</Warning>
+
+### Configure using Aiven Console
+
+<Steps>
+  <Step title="Create logs endpoint">
+    In the Aiven Console, select **Integration endpoints** and choose **AWS CloudWatch Logs**.
+  </Step>
+  
+  <Step title="Add new endpoint">
+    Select **Add new endpoint** or **Create new** and configure:
+    
+    - **Endpoint name** - Reference name for this integration
+    - **Access Key** - Your AWS access key
+    - **Secret Key** - Your AWS secret key
+    - **Region** - Your AWS account region
+    - **Log Group Name** - (Optional) Where log streams are grouped. If not provided, it will be generated.
+  </Step>
+  
+  <Step title="Save endpoint">
+    Select **Create** to save the endpoint.
+  </Step>
+  
+  <Step title="Enable on service">
+    In your service, select **Integrations** and choose **Amazon CloudWatch Logs**.
+  </Step>
+  
+  <Step title="Select endpoint">
+    Pick the endpoint by its **Endpoint name** and choose **Enable**.
+  </Step>
+  
+  <Step title="Verify logs">
+    Visit your AWS CloudWatch console and check the **Logs** section. Data should appear within a few minutes.
+  </Step>
+</Steps>
+
+### Configure using Aiven CLI
+
+<CodeGroup>
+```bash Create endpoint
+avn service integration-endpoint-create --project PROJECT \
+   -d ENDPOINT_NAME -t external_aws_cloudwatch_logs \
+   -c log_group_name=LOG_GROUP_NAME \
+   -c access_key=AWS_ACCESS_KEY \
+   -c secret_key=AWS_SECRET_ACCESS_KEY \
+   -c region=AWS_REGION
+```
+
+```bash List endpoints
+avn service integration-endpoint-list --project PROJECT
+```
+
+```bash Enable on service
+avn service integration-create --project PROJECT \
+   -t external_aws_cloudwatch_logs -s AIVEN_SERVICE_NAME \
+   -D ENDPOINT_ID
+```
+</CodeGroup>
+
+#### Parameters
+
+| Variable | Description |
+|----------|-------------|
+| `PROJECT` | Aiven project where your endpoint is saved |
+| `ENDPOINT_NAME` | Reference name for this log integration |
+| `LOG_GROUP_NAME` | (Optional) Group for log streams on CloudWatch |
+| `AWS_REGION` | AWS region of your account |
+| `AWS_ACCESS_KEY` | Your AWS access key ID |
+| `AWS_SECRET_ACCESS_KEY` | Your AWS secret access key |
+| `AIVEN_SERVICE_NAME` | Aiven service name to send logs from |
+| `ENDPOINT_ID` | ID of the integration endpoint |
+
+## Troubleshooting
+
+### Metrics not appearing
+
+- Verify your AWS credentials have the correct permissions
+- Check that the CloudWatch namespace is correctly configured
+- Allow a few minutes for initial data to appear
+- Ensure the service integration is enabled
+
+### Logs not streaming
+
+- Confirm AWS credentials have all required CloudWatch Logs permissions
+- Verify the AWS region matches your CloudWatch configuration
+- Check log group name doesn't conflict with existing groups
+- Review AWS CloudWatch Logs service limits
+
+## Related resources
+
+- [AWS CloudWatch documentation](https://docs.aws.amazon.com/cloudwatch/)
+- [Aiven CLI reference](/docs/tools/cli)
+- [Service integrations overview](/integrations/overview)

@@ -1,0 +1,112 @@
+---
+title: Aiven developer tools
+description: Explore the tools and interfaces available to interact with the Aiven platform and manage your services.
+---
+
+You can interact with the Aiven platform using various interfaces and tools that best suit your workflow. From web-based consoles to command-line tools, APIs, and infrastructure-as-code solutions, Aiven provides multiple ways to manage your services.
+
+## Available tools
+
+<CardGroup cols={2}>
+  <Card
+    title="Aiven Console"
+    icon="browser"
+    href="/tools/console"
+  >
+    Web-based interface for managing services, organizations, and billing
+  </Card>
+  
+  <Card
+    title="Aiven API"
+    icon="code"
+    href="/tools/api"
+  >
+    RESTful API for programmatic access to the Aiven platform
+  </Card>
+  
+  <Card
+    title="Aiven CLI"
+    icon="terminal"
+    href="/tools/cli"
+  >
+    Command-line interface for scriptable service management
+  </Card>
+  
+  <Card
+    title="Terraform Provider"
+    icon="cube"
+    href="/tools/terraform"
+  >
+    Automate infrastructure provisioning with Terraform
+  </Card>
+  
+  <Card
+    title="Kubernetes Operator"
+    icon="dharmachakra"
+    href="/tools/kubernetes"
+  >
+    Manage Aiven services within your Kubernetes clusters
+  </Card>
+  
+  <Card
+    title="SQL Query Optimizer"
+    icon="sparkles"
+    href="/tools/query-optimizer"
+  >
+    AI-powered query optimization for PostgreSQL and MySQL
+  </Card>
+  
+  <Card
+    title="MCP Server"
+    icon="plug"
+    href="/tools/mcp-server"
+  >
+    Access Aiven documentation from MCP-compatible clients
+  </Card>
+</CardGroup>
+
+## Choose the right tool
+
+### For getting started
+
+If you're new to Aiven, start with the [Aiven Console](/tools/console) for a visual interface to explore services and features.
+
+### For automation
+
+- **Infrastructure as Code**: Use [Terraform Provider](/tools/terraform) or [Kubernetes Operator](/tools/kubernetes)
+- **Custom scripts**: Use [Aiven CLI](/tools/cli) or [Aiven API](/tools/api)
+- **CI/CD pipelines**: Integrate [Aiven API](/tools/api) or [CLI](/tools/cli) into your workflows
+
+### For development
+
+- **Quick testing**: Use [Aiven CLI](/tools/cli) for rapid service creation and testing
+- **Application integration**: Use [Aiven API](/tools/api) for programmatic service management
+- **Query optimization**: Use [SQL Query Optimizer](/tools/query-optimizer) to improve database performance
+
+### For AI assistance
+
+- **Documentation access**: Connect the [MCP Server](/tools/mcp-server) to AI clients like Claude, Cursor, or VS Code Copilot
+
+## Authentication
+
+All programmatic tools (CLI, API, Terraform, Kubernetes) require authentication using personal tokens:
+
+<Steps>
+  <Step title="Create a token">
+    Generate a personal token from the [Aiven Console](https://console.aiven.io) under **User Profile** > **Tokens**
+  </Step>
+  
+  <Step title="Configure your tool">
+    Each tool has specific token configuration methods - see the individual tool documentation for details
+  </Step>
+  
+  <Step title="Secure your token">
+    Store tokens securely and never commit them to version control. Use environment variables or secret management systems
+  </Step>
+</Steps>
+
+## Related resources
+
+- [Aiven Platform Documentation](https://aiven.io/docs)
+- [API Reference](https://api.aiven.io/doc/)
+- [GitHub Repositories](https://github.com/aiven)

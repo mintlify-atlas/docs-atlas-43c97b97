@@ -1,0 +1,541 @@
+---
+title: User Management
+description: Manage service users and credentials via the REST API
+---
+
+Manage users and credentials for your Aiven services. Each service can have multiple users with different credentials and access levels.
+
+## List service users
+
+Retrieve all users for a service.
+
+```http
+GET /v1/project/{project}/service/{service_name}/user
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service/pg-demo/user" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/user",
+    headers=headers
+)
+
+users = response.json()["users"]
+for user in users:
+    print(f"User: {user['username']} (Type: {user['type']})")
+```
+
+```javascript JavaScript
+const project = 'my-project';
+const service = 'pg-demo';
+
+const response = await fetch(
+  `https://api.aiven.io/v1/project/${project}/service/${service}/user`,
+  {
+    headers: {
+      'Authorization': 'aivenv1 YOUR_TOKEN'
+    }
+  }
+);
+
+const data = await response.json();
+console.log(data.users);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="users" type="array">
+  List of service user objects
+  
+  <Expandable>
+    <ResponseField name="username" type="string">
+      Username
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      User type: `primary`, `regular`, or `admin`
+    </ResponseField>
+    
+    <ResponseField name="password" type="string">
+      User password (only returned for newly created users)
+    </ResponseField>
+    
+    <ResponseField name="access_cert" type="string">
+      Client certificate for certificate-based authentication
+    </ResponseField>
+    
+    <ResponseField name="access_key" type="string">
+      Client key for certificate-based authentication
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "users": [
+    {
+      "username": "avnadmin",
+      "type": "primary"
+    },
+    {
+      "username": "app_user",
+      "type": "regular"
+    }
+  ]
+}
+```
+
+## Create service user
+
+Create a new user for a service.
+
+```http
+POST /v1/project/{project}/service/{service_name}/user
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+### Request body
+
+<ParamField body="username" type="string" required>
+  Username (3-63 characters, alphanumeric and underscores)
+</ParamField>
+
+<ParamField body="authentication" type="string">
+  Authentication method: `caching_sha2_password` (MySQL) or `scram-sha-256` (PostgreSQL)
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.aiven.io/v1/project/my-project/service/pg-demo/user" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "app_user"
+  }'
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "username": "app_user"
+}
+
+response = requests.post(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/user",
+    headers=headers,
+    json=data
+)
+
+user = response.json()["user"]
+print(f"Created user: {user['username']}")
+print(f"Password: {user['password']}")
+print("\nStore this password securely - it won't be shown again!")
+```
+
+```javascript JavaScript
+const project = 'my-project';
+const service = 'pg-demo';
+
+const response = await fetch(
+  `https://api.aiven.io/v1/project/${project}/service/${service}/user`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'aivenv1 YOUR_TOKEN',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      username: 'app_user'
+    })
+  }
+);
+
+const data = await response.json();
+console.log('Created user:', data.user.username);
+console.log('Password:', data.user.password);
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="user" type="object">
+  The newly created user object with generated password
+</ResponseField>
+
+<Warning>
+The password is only returned once during user creation. Store it securely immediately.
+</Warning>
+
+### Response example
+
+```json
+{
+  "user": {
+    "username": "app_user",
+    "type": "regular",
+    "password": "GENERATED_PASSWORD_HERE"
+  }
+}
+```
+
+## Reset user password
+
+Reset the password for a service user.
+
+```http
+PUT /v1/project/{project}/service/{service_name}/user/{username}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+<ParamField path="username" type="string" required>
+  Username to reset
+</ParamField>
+
+### Request body
+
+<ParamField body="operation" type="string" required>
+  Must be `reset-credentials`
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X PUT "https://api.aiven.io/v1/project/my-project/service/pg-demo/user/app_user" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "operation": "reset-credentials"
+  }'
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+username = "app_user"
+
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "operation": "reset-credentials"
+}
+
+response = requests.put(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/user/{username}",
+    headers=headers,
+    json=data
+)
+
+user = response.json()["user"]
+print(f"Reset password for: {user['username']}")
+print(f"New password: {user['password']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="user" type="object">
+  User object with new password
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "user": {
+    "username": "app_user",
+    "type": "regular",
+    "password": "NEW_GENERATED_PASSWORD"
+  }
+}
+```
+
+## Delete service user
+
+Delete a user from a service.
+
+```http
+DELETE /v1/project/{project}/service/{service_name}/user/{username}
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+<ParamField path="username" type="string" required>
+  Username to delete
+</ParamField>
+
+<Warning>
+You cannot delete the primary service user (typically `avnadmin`). Ensure no applications are using this user before deletion.
+</Warning>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.aiven.io/v1/project/my-project/service/pg-demo/user/app_user" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+username = "app_user"
+
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.delete(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/user/{username}",
+    headers=headers
+)
+
+if response.status_code == 200:
+    print(f"User {username} deleted successfully")
+```
+</CodeGroup>
+
+### Response
+
+Returns 200 OK with an empty response body on success.
+
+## Get service connection info
+
+Retrieve connection information for a service including host, port, and credentials.
+
+```http
+GET /v1/project/{project}/service/{service_name}/connection_info
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Service name
+</ParamField>
+
+### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service/pg-demo/connection_info" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "pg-demo"
+headers = {"Authorization": "aivenv1 YOUR_TOKEN"}
+
+response = requests.get(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/connection_info",
+    headers=headers
+)
+
+info = response.json()
+print(f"Host: {info['host']}")
+print(f"Port: {info['port']}")
+print(f"Database: {info['database']}")
+print(f"User: {info['user']}")
+print(f"Password: {info['password']}")
+print(f"\nConnection URI: {info['uri']}")
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="host" type="string">
+  Service hostname
+</ResponseField>
+
+<ResponseField name="port" type="integer">
+  Service port
+</ResponseField>
+
+<ResponseField name="user" type="string">
+  Default username
+</ResponseField>
+
+<ResponseField name="password" type="string">
+  Default user password
+</ResponseField>
+
+<ResponseField name="database" type="string">
+  Default database name (for database services)
+</ResponseField>
+
+<ResponseField name="uri" type="string">
+  Complete connection URI
+</ResponseField>
+
+<ResponseField name="ca_cert" type="string">
+  CA certificate for TLS connections
+</ResponseField>
+
+### Response example
+
+```json
+{
+  "host": "pg-demo-project.aivencloud.com",
+  "port": 12345,
+  "user": "avnadmin",
+  "password": "REDACTED",
+  "database": "defaultdb",
+  "uri": "postgres://avnadmin:REDACTED@pg-demo-project.aivencloud.com:12345/defaultdb?sslmode=require",
+  "ca_cert": "-----BEGIN CERTIFICATE-----\n..."
+}
+```
+
+## Kafka user ACL management
+
+For Apache Kafka services, you can manage user ACLs (Access Control Lists) to control topic access.
+
+### Create Kafka ACL
+
+```http
+POST /v1/project/{project}/service/{service_name}/acl
+```
+
+<ParamField path="project" type="string" required>
+  Project name
+</ParamField>
+
+<ParamField path="service_name" type="string" required>
+  Kafka service name
+</ParamField>
+
+#### Request body
+
+<ParamField body="username" type="string" required>
+  Username to grant access
+</ParamField>
+
+<ParamField body="topic" type="string" required>
+  Topic name or pattern (use `*` for all topics)
+</ParamField>
+
+<ParamField body="permission" type="string" required>
+  Permission level: `read`, `write`, `readwrite`, or `admin`
+</ParamField>
+
+#### Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.aiven.io/v1/project/my-project/service/kafka-prod/acl" \
+  -H "Authorization: aivenv1 YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "app_user",
+    "topic": "events.*",
+    "permission": "readwrite"
+  }'
+```
+
+```python Python
+import requests
+
+project = "my-project"
+service = "kafka-prod"
+headers = {
+    "Authorization": "aivenv1 YOUR_TOKEN",
+    "Content-Type": "application/json"
+}
+
+data = {
+    "username": "app_user",
+    "topic": "events.*",
+    "permission": "readwrite"
+}
+
+response = requests.post(
+    f"https://api.aiven.io/v1/project/{project}/service/{service}/acl",
+    headers=headers,
+    json=data
+)
+
+print(f"Created ACL for user {data['username']} on topic {data['topic']}")
+```
+</CodeGroup>
+
+### List Kafka ACLs
+
+```http
+GET /v1/project/{project}/service/{service_name}/acl
+```
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.aiven.io/v1/project/my-project/service/kafka-prod/acl" \
+  -H "Authorization: aivenv1 YOUR_TOKEN"
+```
+</CodeGroup>
+
+## Related resources
+
+- [Create service users in Console](/docs/platform/howto/create_new_service_user)
+- [Service management API](/api-reference/services)
+- [User management CLI commands](/docs/tools/cli/service/user)
+- [Full API reference](https://api.aiven.io/doc/)

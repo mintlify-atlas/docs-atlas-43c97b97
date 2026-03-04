@@ -1,0 +1,579 @@
+---
+title: Aiven for Apache Kafka
+description: Fully managed Apache Kafka for building event-driven applications, data pipelines, and stream processing systems.
+---
+
+Aiven for Apache Kafka is a fully managed Apache Kafka service that provides high-throughput, fault-tolerant event streaming. Deploy production-ready Kafka clusters in minutes with automated operations, monitoring, and scaling.
+
+## Overview
+
+Apache Kafka is the industry-standard platform for building real-time data pipelines and streaming applications. Aiven for Apache Kafka takes care of all operational aspects so you can focus on building applications.
+
+### Cluster Types
+
+Aiven offers two Kafka cluster types to match different workload requirements:
+
+<Tabs>
+  <Tab title="Inkless Kafka">
+    Inkless Kafka stores topic data in cloud object storage through diskless topics, enabling elastic scaling and long-term retention without managing disk capacity.
+
+    **Key Features:**
+    - Diskless topics that store data in object storage
+    - Classic topics with managed remote storage
+    - Elastic storage scaling
+    - Cost-efficient for high-throughput workloads
+    - Ideal for BYOC deployments
+
+    **When to Use:**
+    - High-throughput workloads
+    - Long-term data retention requirements
+    - Storage elasticity is important
+    - Cost optimization is a priority
+  </Tab>
+
+  <Tab title="Classic Kafka">
+    Classic Kafka uses fixed plans with local broker storage and optional tiered storage for older data.
+
+    **Key Features:**
+    - Fixed capacity plans with local storage
+    - Optional tiered storage to object storage
+    - Predictable performance
+    - Low-latency local storage access
+    - Plan-based broker sizing
+
+    **When to Use:**
+    - Predictable capacity requirements
+    - Low-latency access to local storage
+    - Traditional Kafka deployment patterns
+  </Tab>
+</Tabs>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Tiered Storage" icon="layer-group">
+    Store data indefinitely by moving older segments to cost-effective cloud object storage (S3, GCS, Azure Blob) while keeping recent data on fast local disks.
+  </Card>
+
+  <Card title="Kafka Connect" icon="plug">
+    Managed connectors for integrating with databases, storage systems, and data platforms. Available on Professional tier.
+  </Card>
+
+  <Card title="MirrorMaker 2" icon="copy">
+    Cross-cluster replication for disaster recovery, multi-region architectures, and migration between Kafka clusters.
+  </Card>
+
+  <Card title="Schema Registry" icon="file-code">
+    Centralized schema management with support for Avro, JSON Schema, and Protobuf. Ensure data compatibility across producers and consumers.
+  </Card>
+
+  <Card title="Kafka REST API" icon="api">
+    HTTP interface for producing and consuming messages without native Kafka clients.
+  </Card>
+
+  <Card title="Kafka Quotas" icon="gauge">
+    Control resource usage with quotas on throughput, request rates, and client connections.
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Create a Kafka Service">
+    Choose between Inkless or Classic Kafka based on your requirements:
+
+    <Tabs>
+      <Tab title="Inkless Kafka">
+        1. Select **Inkless** as the service type
+        2. Choose Aiven Cloud or BYOC deployment
+        3. Provide expected ingress, egress, and retention
+        4. Deploy the service
+      </Tab>
+      <Tab title="Classic Kafka">
+        1. Select **Classic Kafka** as the service type
+        2. Choose cloud provider and region
+        3. Select a service plan
+        4. Optionally enable tiered storage
+        5. Deploy the service
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Create a Topic">
+    Create your first Kafka topic via the Aiven Console, CLI, or API:
+
+    ```bash
+    avn service topic-create my-kafka-service my-topic \
+      --partitions 3 \
+      --replication 2 \
+      --retention-ms 86400000
+    ```
+  </Step>
+
+  <Step title="Generate Sample Data">
+    Test your Kafka service with the built-in sample data generator from the Aiven Console to verify connectivity.
+  </Step>
+
+  <Step title="Connect Your Application">
+    Get connection details from the service overview and configure your Kafka client.
+  </Step>
+</Steps>
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from kafka import KafkaProducer, KafkaConsumer
+    import json
+
+    # Producer
+    producer = KafkaProducer(
+        bootstrap_servers='kafka-service.aivencloud.com:12345',
+        security_protocol='SSL',
+        ssl_cafile='ca.pem',
+        ssl_certfile='service.cert',
+        ssl_keyfile='service.key',
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+
+    # Send a message
+    producer.send('my-topic', {'event': 'user_login', 'user_id': 123})
+    producer.flush()
+
+    # Consumer
+    consumer = KafkaConsumer(
+        'my-topic',
+        bootstrap_servers='kafka-service.aivencloud.com:12345',
+        security_protocol='SSL',
+        ssl_cafile='ca.pem',
+        ssl_certfile='service.cert',
+        ssl_keyfile='service.key',
+        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+        auto_offset_reset='earliest',
+        group_id='my-consumer-group'
+    )
+
+    for message in consumer:
+        print(f"Received: {message.value}")
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import org.apache.kafka.clients.producer.*;
+    import org.apache.kafka.clients.consumer.*;
+    import java.util.*;
+
+    // Producer Configuration
+    Properties producerProps = new Properties();
+    producerProps.put("bootstrap.servers", "kafka-service.aivencloud.com:12345");
+    producerProps.put("security.protocol", "SSL");
+    producerProps.put("ssl.truststore.location", "/path/to/client.truststore.jks");
+    producerProps.put("ssl.truststore.password", "changeit");
+    producerProps.put("ssl.keystore.location", "/path/to/client.keystore.p12");
+    producerProps.put("ssl.keystore.password", "changeit");
+    producerProps.put("ssl.key.password", "changeit");
+    producerProps.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+    producerProps.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
+    KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps);
+    
+    ProducerRecord<String, String> record = new ProducerRecord<>("my-topic", "key", "value");
+    producer.send(record);
+    producer.close();
+
+    // Consumer Configuration
+    Properties consumerProps = new Properties();
+    consumerProps.put("bootstrap.servers", "kafka-service.aivencloud.com:12345");
+    consumerProps.put("security.protocol", "SSL");
+    consumerProps.put("ssl.truststore.location", "/path/to/client.truststore.jks");
+    consumerProps.put("ssl.truststore.password", "changeit");
+    consumerProps.put("ssl.keystore.location", "/path/to/client.keystore.p12");
+    consumerProps.put("ssl.keystore.password", "changeit");
+    consumerProps.put("group.id", "my-consumer-group");
+    consumerProps.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+    consumerProps.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+
+    KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps);
+    consumer.subscribe(Collections.singletonList("my-topic"));
+    
+    while (true) {
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+        for (ConsumerRecord<String, String> record : records) {
+            System.out.printf("offset = %d, key = %s, value = %s%n", 
+                record.offset(), record.key(), record.value());
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Node.js">
+    ```javascript
+    const { Kafka } = require('kafkajs');
+    const fs = require('fs');
+
+    const kafka = new Kafka({
+      clientId: 'my-app',
+      brokers: ['kafka-service.aivencloud.com:12345'],
+      ssl: {
+        rejectUnauthorized: true,
+        ca: [fs.readFileSync('./ca.pem', 'utf-8')],
+        key: fs.readFileSync('./service.key', 'utf-8'),
+        cert: fs.readFileSync('./service.cert', 'utf-8')
+      }
+    });
+
+    // Producer
+    const producer = kafka.producer();
+    await producer.connect();
+    await producer.send({
+      topic: 'my-topic',
+      messages: [
+        { key: 'user-123', value: JSON.stringify({ event: 'login' }) }
+      ]
+    });
+    await producer.disconnect();
+
+    // Consumer
+    const consumer = kafka.consumer({ groupId: 'my-consumer-group' });
+    await consumer.connect();
+    await consumer.subscribe({ topic: 'my-topic', fromBeginning: true });
+    
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+        console.log({
+          partition,
+          offset: message.offset,
+          value: message.value.toString(),
+        });
+      },
+    });
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        "crypto/tls"
+        "crypto/x509"
+        "github.com/Shopify/sarama"
+        "io/ioutil"
+        "log"
+    )
+
+    func main() {
+        // Load certificates
+        cert, err := tls.LoadX509KeyPair("service.cert", "service.key")
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        caCert, err := ioutil.ReadFile("ca.pem")
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        caCertPool := x509.NewCertPool()
+        caCertPool.AppendCertsFromPEM(caCert)
+
+        tlsConfig := &tls.Config{
+            Certificates: []tls.Certificate{cert},
+            RootCAs:      caCertPool,
+        }
+
+        // Producer
+        config := sarama.NewConfig()
+        config.Net.TLS.Enable = true
+        config.Net.TLS.Config = tlsConfig
+        config.Producer.Return.Successes = true
+
+        producer, err := sarama.NewSyncProducer(
+            []string{"kafka-service.aivencloud.com:12345"}, 
+            config,
+        )
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer producer.Close()
+
+        msg := &sarama.ProducerMessage{
+            Topic: "my-topic",
+            Value: sarama.StringEncoder("Hello from Go!"),
+        }
+
+        partition, offset, err := producer.SendMessage(msg)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        log.Printf("Message sent to partition %d at offset %d\n", partition, offset)
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Features
+
+### Tiered Storage
+
+Tiered storage decouples storage and compute, allowing indefinite data retention:
+
+<Accordion title="How Tiered Storage Works">
+  - Recent data stays on fast local disks for low-latency access
+  - Older segments automatically move to cloud object storage (S3, GCS, Azure)
+  - Configure per-topic retention policies
+  - Significant cost savings for long retention periods
+  - Available on Classic Kafka (optional) and built into Inkless Kafka
+
+  **Enable Tiered Storage:**
+  ```bash
+  avn service update my-kafka-service \
+    -c kafka.tiered_storage.enabled=true
+  ```
+</Accordion>
+
+### Kafka Connect
+
+<Accordion title="Data Integration with Connectors">
+  Kafka Connect provides managed source and sink connectors:
+
+  **Popular Connectors:**
+  - JDBC (PostgreSQL, MySQL, SQL Server)
+  - S3, GCS, Azure Blob Storage
+  - Elasticsearch, OpenSearch
+  - MongoDB, Cassandra
+  - Debezium CDC connectors
+
+  **Create a Connector:**
+  ```bash
+  avn service connector create my-kafka-service @connector-config.json
+  ```
+</Accordion>
+
+### MirrorMaker 2
+
+<Accordion title="Cross-Cluster Replication">
+  Replicate data between Kafka clusters for:
+  - Disaster recovery
+  - Multi-region architectures
+  - Migration between clusters
+  - Active-active deployments
+
+  **Setup Replication:**
+  ```bash
+  avn service integration-create \
+    --integration-type kafka_mirrormaker \
+    --source-service source-kafka \
+    --dest-service target-kafka \
+    -c kafka_mirrormaker.topics=".*"
+  ```
+</Accordion>
+
+### Schema Registry
+
+<Accordion title="Centralized Schema Management">
+  Schema Registry ensures data compatibility:
+
+  - Support for Avro, JSON Schema, Protobuf
+  - Schema evolution with compatibility checking
+  - Schema versioning and history
+  - Integration with producers and consumers
+
+  **Register a Schema:**
+  ```bash
+  curl -X POST https://kafka-service.aivencloud.com/subjects/my-topic-value/versions \
+    -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+    -d '{"schema": "{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"id\", \"type\": \"int\"}]}"}'
+  ```
+</Accordion>
+
+## Performance and Scaling
+
+<AccordionGroup>
+  <Accordion title="Horizontal vs Vertical Scaling">
+    **Horizontal Scaling:**
+    - Add more brokers to increase throughput
+    - Distribute partitions across brokers
+    - Handle more concurrent connections
+
+    **Vertical Scaling:**
+    - Upgrade to larger instance types
+    - Increase CPU and memory per broker
+    - Improve single-partition throughput
+  </Accordion>
+
+  <Accordion title="Partition Strategy">
+    - More partitions = higher parallelism
+    - Balance partition count with consumer group size
+    - Consider replication factor for durability
+    - Typical: 3-10 partitions per broker
+  </Accordion>
+
+  <Accordion title="Consumer Groups">
+    - Each consumer in a group processes different partitions
+    - Scale consumers up to number of partitions
+    - Monitor consumer lag to identify bottlenecks
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring and Operations
+
+### Key Metrics to Monitor
+
+- **Throughput**: Messages per second in/out
+- **Latency**: End-to-end message delivery time
+- **Consumer Lag**: How far behind consumers are
+- **Disk Usage**: Local and remote storage consumption
+- **Replication**: Under-replicated partitions
+
+### Integration with Observability Tools
+
+<CodeGroup>
+```bash Metrics to Grafana
+avn service integration-create \
+  --integration-type metrics \
+  --source-service my-kafka-service \
+  --dest-service my-grafana-service
+```
+
+```bash Logs to OpenSearch
+avn service integration-create \
+  --integration-type logs \
+  --source-service my-kafka-service \
+  --dest-service my-opensearch-service
+```
+</CodeGroup>
+
+## Security
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock">
+    - SASL/SSL authentication
+    - Certificate-based auth
+    - ACL-based authorization
+    - User and permission management
+  </Card>
+
+  <Card title="Encryption" icon="shield">
+    - TLS encryption in transit
+    - Encryption at rest
+    - Separate encryption keys per service
+  </Card>
+
+  <Card title="Network Security" icon="network-wired">
+    - VPC peering
+    - AWS PrivateLink
+    - IP allowlisting
+    - Private connectivity options
+  </Card>
+
+  <Card title="Compliance" icon="certificate">
+    - ISO 27001:2013
+    - SOC 2 Type II
+    - GDPR compliant
+    - HIPAA available
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Event-Driven Architecture">
+    Build microservices that communicate through events:
+    - Decouple services with event streams
+    - Enable real-time processing
+    - Maintain event history
+    - Support event sourcing patterns
+  </Tab>
+
+  <Tab title="Data Pipelines">
+    Move data between systems reliably:
+    - CDC from databases to data warehouses
+    - Stream processing with Flink
+    - Real-time ETL pipelines
+    - Data lake ingestion
+  </Tab>
+
+  <Tab title="Log Aggregation">
+    Centralize logs from distributed systems:
+    - Collect application logs
+    - Stream to OpenSearch for analysis
+    - Real-time alerting
+    - Long-term retention with tiered storage
+  </Tab>
+
+  <Tab title="Metrics and Monitoring">
+    Handle high-volume metrics streams:
+    - Application metrics collection
+    - Infrastructure monitoring
+    - Stream to time-series databases
+    - Real-time anomaly detection
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Topic Design">
+    - Use meaningful topic names
+    - Plan partition count for expected throughput
+    - Set appropriate retention based on use case
+    - Enable compression (snappy or lz4)
+    - Consider topic naming conventions
+  </Accordion>
+
+  <Accordion title="Producer Configuration">
+    - Set `acks=all` for durability
+    - Enable idempotence for exactly-once semantics
+    - Batch messages for throughput
+    - Implement proper error handling
+    - Use async sends with callbacks
+  </Accordion>
+
+  <Accordion title="Consumer Configuration">
+    - Choose appropriate consumer group IDs
+    - Set proper `auto.offset.reset`
+    - Monitor consumer lag
+    - Implement graceful shutdown
+    - Handle rebalancing properly
+  </Accordion>
+
+  <Accordion title="Operational Excellence">
+    - Monitor key metrics continuously
+    - Set up alerts for critical issues
+    - Plan capacity for peak loads
+    - Test disaster recovery procedures
+    - Document runbooks for common operations
+  </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Apache Flink" icon="wave-pulse" href="/services/flink">
+    Stream processing on Kafka data
+  </Card>
+  <Card title="PostgreSQL" icon="database" href="/services/postgresql">
+    Sink Kafka data to PostgreSQL
+  </Card>
+  <Card title="OpenSearch" icon="magnifying-glass" href="/services/opensearch">
+    Search and analyze Kafka logs
+  </Card>
+  <Card title="ClickHouse" icon="chart-column" href="/services/clickhouse">
+    Real-time analytics on streaming data
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+- [Create your first Kafka service](/platform/create-service)
+- [Kafka Connect documentation](/integrations/kafka-connect)
+- [Schema Registry guide](/integrations/schema-registry)
+- [Migration to Aiven Kafka](/platform/migration)
+
+<Note>
+  **Free Tier Available**: Try Aiven for Apache Kafka with no payment method required. Perfect for development and testing.
+</Note>

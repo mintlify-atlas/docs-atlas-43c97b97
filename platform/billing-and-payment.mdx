@@ -1,0 +1,590 @@
+---
+title: Billing and Payment
+description: Learn how to manage billing groups, payment methods, invoices, and cost allocation in your Aiven organization.
+---
+
+Aiven uses a transparent, usage-based billing model managed at the organization level. Billing groups allow you to consolidate costs across projects and use the same payment details for multiple projects within your organization.
+
+## Billing overview
+
+All billing is managed at the **organization level**. You cannot share billing information between different Aiven organizations.
+
+<CardGroup cols={2}>
+  <Card title="Payment Methods" icon="credit-card">
+    - Credit cards (Visa, Mastercard, Amex)
+    - Bank transfers
+    - AWS Marketplace
+    - Google Cloud Marketplace  
+    - Azure Marketplace
+  </Card>
+  <Card title="Billing Cycle" icon="calendar">
+    - **Hourly billing** - Pay only for actual usage
+    - **Monthly invoices** - Consolidated at billing group level
+    - **No minimum commitment** - Start and stop services anytime
+    - **No hidden fees** - Backups and regional data transfer included
+  </Card>
+</CardGroup>
+
+<Note>
+To access billing information, you must be an **Organization Admin** or have the `organization:billing:read` or `organization:billing:write` permission.
+</Note>
+
+## Billing groups
+
+Billing groups store payment details in one place, allowing you to use the same payment method, billing address, and contacts across multiple projects.
+
+### What's in a billing group?
+
+<Steps>
+  <Step title="Payment method">
+    Credit card, bank transfer details, or marketplace subscription
+  </Step>
+  <Step title="Billing address">
+    Company address for invoicing and tax purposes
+  </Step>
+  <Step title="Shipping address">
+    Optional separate shipping address
+  </Step>
+  <Step title="Billing contacts">
+    Email addresses to receive invoices and billing notifications
+  </Step>
+  <Step title="Credits">
+    Trial credits or promotional credits applied automatically
+  </Step>
+</Steps>
+
+### Billing group benefits
+
+- **Consolidated invoices** - One invoice per billing group covering all assigned projects
+- **Cost categorization** - Group projects by department, environment, or cost center
+- **Simplified management** - Update payment details once for multiple projects
+- **Automatic credits** - Trial and promotional credits applied to all projects in the group
+
+### Creating billing groups
+
+<Tabs>
+  <Tab title="Aiven Console">
+    <Steps>
+      <Step title="Navigate to Billing">
+        In the organization, click **Admin** → **Billing**
+      </Step>
+      <Step title="Create billing group">
+        Click **Billing groups** → **Create billing group**
+      </Step>
+      <Step title="Configure settings">
+        - Enter billing group name
+        - Add payment method
+        - Set billing address
+        - Add billing contacts
+      </Step>
+      <Step title="Assign projects">
+        Go to each project's settings and select this billing group
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Aiven CLI">
+    ```bash
+    # Create a billing group
+    avn billing-group create \
+      --organization-id <ORG_ID> \
+      --billing-group-name "Production Services"
+    
+    # List billing groups
+    avn billing-group list --organization-id <ORG_ID>
+    
+    # Assign project to billing group
+    avn project update \
+      --project my-project \
+      --billing-group-id <BILLING_GROUP_ID>
+    ```
+  </Tab>
+  
+  <Tab title="API">
+    ```bash
+    # Create billing group
+    curl -X POST \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "billing_group_name": "Production Services",
+        "billing_currency": "USD"
+      }' \
+      https://api.aiven.io/v1/organization/{org_id}/billing-group
+    
+    # Assign project to billing group  
+    curl -X PUT \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "billing_group_id": "bg123abc"
+      }' \
+      https://api.aiven.io/v1/project/{project}
+    ```
+  </Tab>
+</Tabs>
+
+### Organizing with billing groups
+
+<CardGroup cols={2}>
+  <Card title="By Department" icon="building">
+    ```
+    Engineering Billing Group
+    ├── backend-dev
+    ├── backend-prod  
+    └── api-services
+    
+    Analytics Billing Group
+    ├── data-warehouse
+    └── streaming-pipeline
+    ```
+  </Card>
+  <Card title="By Environment" icon="layer-group">
+    ```
+    Development Billing Group
+    ├── backend-dev
+    ├── frontend-dev
+    └── analytics-dev
+    
+    Production Billing Group  
+    ├── backend-prod
+    ├── frontend-prod
+    └── analytics-prod
+    ```
+  </Card>
+</CardGroup>
+
+<Warning>
+Every project with active services **must** be assigned to a billing group. Services cannot be created in projects without a billing group.
+</Warning>
+
+## Payment methods
+
+### Credit card payments
+
+The most common payment method for Aiven services:
+
+<Steps>
+  <Step title="Add payment card">
+    Navigate to **Admin** → **Billing** → **Billing groups** → Select group → **Payment method**
+  </Step>
+  <Step title="Enter card details">
+    Provide card number, expiration, CVV, and cardholder name
+  </Step>
+  <Step title="Automatic charging">
+    Card is charged automatically at the end of each billing period
+  </Step>
+</Steps>
+
+```bash
+# Update payment card via CLI
+avn billing-group card-update \
+  --billing-group-id <BILLING_GROUP_ID> \
+  --card-number "4111111111111111" \
+  --exp-month 12 \
+  --exp-year 2025 \
+  --cvc 123
+```
+
+<Note>
+Aiven uses PCI DSS compliant payment processors. Card details are never stored on Aiven servers.
+</Note>
+
+### Bank transfer
+
+Available for customers with negotiated payment terms:
+
+- **Net 30/60 terms** - Available with approved credit
+- **Wire transfer details** - Provided on invoices
+- **ACH/SEPA** - Available in select regions
+
+<Note>
+Contact your account team or [sales@aiven.io](mailto:sales@aiven.io) to set up bank transfer payments.
+</Note>
+
+### Marketplace subscriptions
+
+Pay for Aiven through your existing cloud marketplace subscription:
+
+<Tabs>
+  <Tab title="AWS Marketplace">
+    <Steps>
+      <Step title="Subscribe">
+        Find Aiven in [AWS Marketplace](https://aws.amazon.com/marketplace/seller-profile?id=0efb9e84-2f26-4655-a0a0-6f19b94c6de3)
+      </Step>
+      <Step title="Link account">
+        Follow prompts to connect your Aiven organization
+      </Step>
+      <Step title="Use AWS credits">
+        Charges appear on your AWS bill and can use committed spend
+      </Step>
+    </Steps>
+    
+    ```bash
+    # List marketplace subscriptions
+    avn billing-group list-marketplace-subscriptions \
+      --organization-id <ORG_ID>
+    ```
+  </Tab>
+  
+  <Tab title="GCP Marketplace">
+    <Steps>
+      <Step title="Subscribe">
+        Find Aiven in [Google Cloud Marketplace](https://console.cloud.google.com/marketplace/product/aiven-public/aiven)
+      </Step>
+      <Step title="Link account">
+        Connect your Aiven organization during signup
+      </Step>
+      <Step title="Use GCP credits">
+        Charges appear on your GCP bill and can use committed use discounts
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Azure Marketplace">
+    <Steps>
+      <Step title="Subscribe">
+        Find Aiven in [Azure Marketplace](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/aiven.aiven)
+      </Step>
+      <Step title="Link account">
+        Connect your Aiven organization
+      </Step>
+      <Step title="Use Azure credits">
+        Charges appear on your Azure bill and can use committed spend
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Note>
+Marketplace subscriptions must be set up at the time of organization creation or by contacting Aiven support.
+</Note>
+
+## Service pricing
+
+Aiven uses transparent, predictable pricing based on service plans:
+
+### Understanding service costs
+
+<Steps>
+  <Step title="Base hourly rate">
+    Each service plan has a fixed hourly rate that includes:
+    - Virtual machines and compute
+    - Storage (disk space)
+    - Automated backups
+    - Data transfer within the same region
+    - Maintenance and updates
+  </Step>
+  <Step title="Additional costs">
+    - **Cross-region data transfer** - Charged by cloud provider rates
+    - **Static IP addresses** - Small hourly fee per IP
+    - **Additional storage** - Beyond plan's included storage
+    - **BYOC infrastructure** - Billed separately by your cloud provider
+  </Step>
+  <Step title="No hidden fees">
+    No charges for:
+    - API calls
+    - Number of databases
+    - Number of connections
+    - Backup storage in same region
+  </Step>
+</Steps>
+
+### Service plan tiers
+
+<CardGroup cols={2}>
+  <Card title="Hobbyist" icon="seedling">
+    - Single node, no high availability
+    - Limited backups
+    - Best for: Development, testing, learning
+    - Starting at $10-15/month
+  </Card>
+  <Card title="Startup" icon="rocket">
+    - High availability with multiple nodes
+    - Full backup coverage
+    - Best for: Small production workloads
+    - Starting at $50-100/month
+  </Card>
+  <Card title="Business" icon="briefcase">
+    - Enhanced performance and resources
+    - High availability
+    - Best for: Production workloads
+    - Starting at $200-500/month
+  </Card>
+  <Card title="Premium" icon="crown">
+    - Maximum performance and resources
+    - Dedicated infrastructure options
+    - Best for: Mission-critical workloads
+    - Starting at $1,000+/month
+  </Card>
+</CardGroup>
+
+### Calculating monthly costs
+
+```bash
+# Get service pricing for a specific plan
+avn service types --project my-project
+
+# Example PostgreSQL Business-4 plan:
+# Hourly rate: $0.50/hour
+# Monthly cost: $0.50 × 730 hours = $365/month
+
+# View current month costs for a project
+avn project billing-summary --project my-project
+```
+
+<Note>
+Service costs are calculated per hour. If you run a service for only part of an hour, you're charged for the full hour.
+</Note>
+
+## Invoices and reporting
+
+### Accessing invoices
+
+<Steps>
+  <Step title="View invoices">
+    Navigate to **Admin** → **Billing** → **Invoices**
+  </Step>
+  <Step title="Download invoices">
+    Click on any invoice to download PDF or view details
+  </Step>
+  <Step title="Email delivery">
+    Invoices are automatically emailed to billing group contacts
+  </Step>
+</Steps>
+
+```bash
+# List invoices via CLI
+avn billing-group invoice-list \
+  --billing-group-id <BILLING_GROUP_ID>
+
+# Download specific invoice
+avn billing-group invoice-get \
+  --billing-group-id <BILLING_GROUP_ID> \
+  --invoice-number INV-2024-001
+```
+
+### Invoice details
+
+Each invoice includes:
+
+- **Billing period** - Start and end dates
+- **Breakdown by project** - Costs separated by project
+- **Breakdown by service** - Individual service charges
+- **Service type** - PostgreSQL, Kafka, Redis, etc.
+- **Hours used** - Actual hours each service ran
+- **Applied credits** - Any promotional or trial credits
+- **Total amount** - Final amount charged
+
+### Cost breakdown API
+
+Export detailed cost information for business intelligence tools:
+
+```bash
+# Get cost breakdown for a billing group
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://api.aiven.io/v1/billing-group/{billing_group_id}/invoice" \
+  | jq '.invoices[] | {date: .invoice_date, amount: .total_inc_vat}'
+
+# Get project-level costs
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://api.aiven.io/v1/project/{project}/costs" \
+  | jq '.costs[] | {service: .service_name, cost: .cost}'
+```
+
+<Note>
+Use the [Invoice API](https://api.aiven.io/doc/#tag/BillingGroup) to integrate cost data with your accounting or BI systems.
+</Note>
+
+## Credits and trials
+
+### Trial credits
+
+New Aiven accounts receive trial credits:
+
+- **$300 credit** - For new signups (amount may vary by region)
+- **30-60 days** - Credits expire after promotional period
+- **Automatic application** - Applied to billing group automatically
+- **No credit card required** - Start using services immediately
+
+### Promotional credits
+
+Aiven occasionally offers promotional credits:
+
+- **Event credits** - From conference attendance or partnerships
+- **Referral credits** - For referring new customers
+- **Migration credits** - When migrating from other platforms
+
+```bash
+# View available credits
+avn billing-group credits-list \
+  --billing-group-id <BILLING_GROUP_ID>
+```
+
+<Note>
+Credits are automatically applied to charges for any project assigned to the billing group. Credits cannot be transferred between billing groups or organizations.
+</Note>
+
+## Tax information
+
+### Value Added Tax (VAT)
+
+- **EU customers** - VAT charged unless valid VAT ID provided
+- **Reverse charge** - Available for EU businesses with VAT ID
+- **Rate varies** - Based on billing address country
+
+### Sales tax
+
+- **US customers** - Sales tax charged based on state regulations
+- **State-specific** - Rates vary by billing address
+
+### Updating tax information
+
+<Steps>
+  <Step title="Navigate to billing group">
+    **Admin** → **Billing** → **Billing groups** → Select group
+  </Step>
+  <Step title="Edit billing address">
+    Click **Billing address** → **Edit**
+  </Step>
+  <Step title="Add VAT ID">
+    Enter your VAT ID or tax identification number
+  </Step>
+  <Step title="Verify">
+    Aiven validates VAT IDs against official databases
+  </Step>
+</Steps>
+
+<Warning>
+Tax information must be accurate. Incorrect tax details may result in incorrect charges or compliance issues.
+</Warning>
+
+## Billing permissions
+
+Control who can view and manage billing with granular permissions:
+
+<ParamField path="organization:billing:read" type="Permission">
+  **View billing** - Read-only access to:
+  - All billing groups
+  - Payment methods (masked)
+  - Invoices and cost breakdowns
+  - Billing addresses
+  
+  Best for: Finance team members who need visibility without management access
+</ParamField>
+
+<ParamField path="organization:billing:write" type="Permission">  
+  **Manage billing** - Full access to:
+  - Create, edit, delete billing groups
+  - Add, update, remove payment methods
+  - Edit billing and shipping addresses
+  - View and download invoices
+  
+  Best for: Finance managers and administrators
+</ParamField>
+
+```bash
+# Grant billing read permission to a user
+avn organization user-permission-grant \
+  --organization-id <ORG_ID> \
+  --user-email finance@company.com \
+  --permission organization:billing:read
+
+# Grant billing write permission to a group  
+avn organization group-permission-grant \
+  --organization-id <ORG_ID> \
+  --group-id <GROUP_ID> \
+  --permission organization:billing:write
+```
+
+<Note>
+**Organization Admin** and **Super Admin** roles have full billing access by default.
+</Note>
+
+## Best practices
+
+<Steps>
+  <Step title="Use multiple billing groups">
+    Separate costs by department, environment, or cost center for better tracking and chargeback
+  </Step>
+  <Step title="Set up billing contacts">
+    Add multiple email addresses to ensure billing notifications reach the right people
+  </Step>
+  <Step title="Monitor usage regularly">
+    Review cost breakdowns weekly or monthly to catch unexpected charges early
+  </Step>
+  <Step title="Use tags for allocation">
+    Add tags to projects and services for more detailed cost attribution
+  </Step>
+  <Step title="Set up alerts">
+    Enable notifications for approaching credit limits or unusual spending patterns
+  </Step>
+  <Step title="Automate cost reporting">
+    Use the Invoice API to export cost data to your BI or accounting systems
+  </Step>
+  <Step title="Right-size services">
+    Regularly review service plans and scale down unused or over-provisioned services
+  </Step>
+  <Step title="Use Hobbyist for dev/test">
+    Development and testing workloads don't need high availability
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot create services in project">
+    **Cause:** Project not assigned to a billing group or payment method expired
+    
+    **Solution:**
+    1. Verify project has a billing group: `avn project get --project my-project`
+    2. Check billing group payment method is valid
+    3. Update payment method if expired
+  </Accordion>
+  
+  <Accordion title="Invoice shows unexpected charges">
+    **Cause:** Services running longer than expected or additional features enabled
+    
+    **Solution:**
+    1. Review cost breakdown in invoice
+    2. Check service uptime: `avn service list --project my-project`
+    3. Verify no unwanted services are running
+    4. Contact support if charges still unclear
+  </Accordion>
+  
+  <Accordion title="Credits not applying">
+    **Cause:** Credits assigned to different billing group or expired
+    
+    **Solution:**
+    1. Verify credits: `avn billing-group credits-list --billing-group-id <ID>`
+    2. Check credit expiration dates
+    3. Ensure project is in correct billing group
+  </Accordion>
+  
+  <Accordion title="Payment declined">
+    **Cause:** Insufficient funds, card expired, or fraud prevention
+    
+    **Solution:**
+    1. Update payment method with valid card
+    2. Contact your bank if card should work
+    3. Try alternative payment method
+    4. Contact Aiven support for payment plan options
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Organizations & Projects" icon="sitemap" href="/platform/organizations-and-projects">
+    Learn how to organize projects for cost allocation
+  </Card>
+  <Card title="Users & Permissions" icon="users" href="/platform/users-and-permissions">
+    Grant billing permissions to finance team
+  </Card>
+  <Card title="Service Integrations" icon="link" href="/platform/service-integrations">
+    Set up cost monitoring with metrics integrations
+  </Card>
+  <Card title="Aiven API" icon="code" href="https://api.aiven.io/doc">
+    Automate billing and cost reporting
+  </Card>
+</CardGroup>

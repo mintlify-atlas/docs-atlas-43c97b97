@@ -1,0 +1,90 @@
+---
+title: Monitoring and logging integrations
+description: Send metrics and logs from Aiven services to external monitoring and logging platforms including AWS CloudWatch, Datadog, Prometheus, Rsyslog, and Elasticsearch.
+---
+
+Aiven provides integrations with popular monitoring and logging platforms, enabling you to include your Aiven service data in your existing observability infrastructure. You can send both metrics and logs to external services for analysis, alerting, and long-term storage.
+
+## Available integrations
+
+<CardGroup cols={2}>
+  <Card title="AWS CloudWatch" icon="aws" href="/integrations/cloudwatch">
+    Send metrics and logs to Amazon CloudWatch for monitoring and analysis
+  </Card>
+  
+  <Card title="Datadog" icon="chart-line" href="/integrations/datadog">
+    Integrate with Datadog for comprehensive monitoring and alerting
+  </Card>
+  
+  <Card title="Prometheus" icon="chart-bar" href="/integrations/prometheus">
+    Export system metrics to Prometheus for monitoring and visualization
+  </Card>
+  
+  <Card title="Rsyslog" icon="server" href="/integrations/rsyslog">
+    Forward logs to external syslog servers and logging platforms
+  </Card>
+  
+  <Card title="Elasticsearch" icon="magnifying-glass" href="/integrations/elasticsearch">
+    Store and analyze service logs in external Elasticsearch clusters
+  </Card>
+</CardGroup>
+
+## Metrics vs logs
+
+### Metrics integrations
+
+Metrics provide quantitative data about your service performance and resource usage:
+
+- **AWS CloudWatch Metrics** - Send service metrics to CloudWatch with customizable namespaces
+- **Datadog Metrics** - Export metrics with custom tags for enhanced filtering and analysis
+- **Prometheus** - Expose system-level metrics including CPU, memory, disk, and network usage
+
+### Logs integrations
+
+Logs capture detailed event information and operational data from your services:
+
+- **AWS CloudWatch Logs** - Stream service logs to CloudWatch log groups
+- **Datadog Logs** (via Rsyslog) - Forward logs to Datadog for correlation with metrics
+- **Rsyslog** - Send logs to any rsyslog-compatible destination
+- **Elasticsearch** - Store logs in external Elasticsearch for search and analysis
+
+## Integration workflow
+
+All Aiven integrations follow a similar setup process:
+
+<Steps>
+  <Step title="Create integration endpoint">
+    Configure the external service connection in your Aiven project. This endpoint can be reused across multiple services.
+  </Step>
+  
+  <Step title="Enable integration on service">
+    Link the integration endpoint to your Aiven service to start sending data.
+  </Step>
+  
+  <Step title="Verify data flow">
+    Check your external monitoring or logging platform to confirm data is being received.
+  </Step>
+</Steps>
+
+<Note>
+You can manage integrations through the [Aiven Console](https://console.aiven.io/) or using the [Aiven CLI](/docs/tools/cli).
+</Note>
+
+## Security considerations
+
+- **TLS encryption** - Most integrations support or require TLS encryption for secure data transmission
+- **Authentication** - Use API keys, access keys, or certificates to authenticate with external services
+- **Access control** - Ensure external service credentials have appropriate permissions
+- **Data privacy** - Logs may contain sensitive information; use secure transport and storage
+
+<Warning>
+When configuring log integrations, ensure that TLS is enabled if the remote server supports it, as logs may contain sensitive information.
+</Warning>
+
+## Next steps
+
+- Learn how to [send metrics to AWS CloudWatch](/integrations/cloudwatch)
+- Set up [Datadog monitoring](/integrations/datadog) for your services
+- Configure [Prometheus metrics](/integrations/prometheus) for system monitoring
+- Forward logs using [Rsyslog integration](/integrations/rsyslog)
+- Store logs in [external Elasticsearch](/integrations/elasticsearch)
